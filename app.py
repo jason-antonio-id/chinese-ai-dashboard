@@ -80,19 +80,24 @@ pytesseract.pytesseract.tesseract_cmd = os.getenv(
     "TESSERACT_CMD", "/usr/bin/tesseract"
 )
 
-# ==================== FIREBASE INIT ====================
+# ==================== FIREBASE INIT (FLEXIBLE FOR RENDER) ====================
 
-firebase_cred_path = os.getenv("FIREBASE_CREDENTIALS", "serviceAccountKey.json")
+# Load credentials from environment variable (for Render) or fallback to local file
+cred_json = os.getenv("FIREBASE_CREDENTIALS")
+if not cred_json:
+    # Fallback to local file for development
+    firebase_cred_path = os.getenv("FIREBASE_CREDENTIALS_PATH", "serviceAccountKey.json")
+    if not os.path.exists(firebase_cred_path):
+        raise FileNotFoundError(
+            f"Firebase credentials file not found at '{firebase_cred_path}'. "
+            "Set FIREBASE_CREDENTIALS in your .env file (as JSON string) or provide the file."
+        )
+    cred = credentials.Certificate(firebase_cred_path)
+else:
+    # Parse the JSON string from the environment variable (Render deployment)
+    cred_dict = json.loads(cred_json)
+    cred = credentials.Certificate(cred_dict)
 
-# Guard: fail clearly rather than with a cryptic Firebase error
-if not os.path.exists(firebase_cred_path):
-    raise FileNotFoundError(
-        f"Firebase credentials file not found at '{firebase_cred_path}'. "
-        "Set FIREBASE_CREDENTIALS in your .env file to the correct path, "
-        "and make sure the file is present on this machine (never commit it to Git)."
-    )
-
-cred = credentials.Certificate(firebase_cred_path)
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
