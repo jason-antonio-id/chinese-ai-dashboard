@@ -1394,5 +1394,9 @@ def api_priceprediction():
 #     return preds, probs
 # """
 
+# Keep everything above the same ...
+
 if __name__ == "__main__":
-    app.run(debug=(os.getenv("FLASK_DEBUG", "false").lower() == "true"))
+    # Use the PORT environment variable provided by Render
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)
