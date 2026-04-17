@@ -1,0 +1,1 @@
+web: gunicorn fake_review_app:app

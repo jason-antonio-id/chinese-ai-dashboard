@@ -1,0 +1,2246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Dashboard — 人工智能工具平台</title>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+<style>
+/* ====== CSS VARIABLES ====== */
+:root {
+  --navy: #042C53;
+  --blue: #185FA5;
+  --sky: #378ADD;
+  --pale: #85B7EB;
+  --bg: #F0F5FB;
+  --white: #ffffff;
+  --border: rgba(181,212,244,0.5);
+  --shadow: 0 4px 24px rgba(4,44,83,0.1);
+  --red: #E24B4A;
+  --green: #10B981;
+  --card-bg: rgba(255,255,255,0.9);
+  --text: #042C53;
+  --subtext: #6B7280;
+  --surface: #F0F5FB;
+}
+[data-theme="dark"] {
+  --navy: #0a1628;
+  --blue: #1a4a8a;
+  --sky: #4a9edd;
+  --pale: #6aabdd;
+  --bg: #050d1a;
+  --white: #0d1e35;
+  --border: rgba(74,158,221,0.2);
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  --card-bg: rgba(13,30,53,0.95);
+  --text: #e2eaf5;
+  --subtext: #8aa5c0;
+  --surface: #0d1e35;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', 'Noto Sans SC', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background 0.4s, color 0.4s;
+}
+
+/* ====== HERO ENTRANCE ANIMATION ====== */
+.hero-animate {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: hero-fade-in 1s ease-out forwards;
+}
+@keyframes hero-fade-in {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.hero-sub { animation-delay: 0.15s; }
+
+/* ====== LUXURY INTRO SCREEN ====== */
+#luxuryIntro {
+  position: fixed; inset: 0; z-index: 99999;
+  background: linear-gradient(135deg, #020f1f 0%, #042C53 40%, #0C447C 70%, #185FA5 100%);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+#luxuryIntro.fade-out { animation: introFadeOut 1.2s cubic-bezier(0.4,0,0.2,1) forwards; }
+@keyframes introFadeOut {
+  0% { opacity: 1; transform: scale(1); filter: blur(0px); }
+  40% { opacity: 1; transform: scale(1.04); }
+  100% { opacity: 0; transform: scale(1.12); filter: blur(16px); pointer-events: none; }
+}
+@keyframes particlePop {
+  0% { transform: translate(0,0) scale(1); opacity: 1; }
+  100% { transform: translateY(-120px) scale(0); opacity: 0; }
+}
+
+/* Live ocean background for intro */
+.intro-ocean {
+  position: absolute; inset: 0; overflow: hidden;
+}
+.intro-wave {
+  position: absolute; bottom: 0; left: -50%;
+  width: 200%; height: 180px;
+  border-radius: 43%;
+  background: rgba(55,138,221,0.15);
+  animation: introWave 8s ease-in-out infinite;
+}
+.intro-wave:nth-child(2) {
+  height: 140px; background: rgba(55,138,221,0.1);
+  animation: introWave 10s ease-in-out -2s infinite;
+  border-radius: 47%;
+}
+.intro-wave:nth-child(3) {
+  height: 110px; background: rgba(133,183,235,0.12);
+  animation: introWave 12s ease-in-out -4s infinite;
+  border-radius: 40%;
+}
+@keyframes introWave {
+  0%,100% { transform: translateX(0) translateY(0); }
+  25% { transform: translateX(5%) translateY(-15px); }
+  50% { transform: translateX(-5%) translateY(10px); }
+  75% { transform: translateX(3%) translateY(-8px); }
+}
+
+/* Floating bubbles in intro */
+.intro-bubbles { position: absolute; inset: 0; pointer-events: none; }
+.ibubble {
+  position: absolute; border-radius: 50%;
+  background: rgba(133,183,235,0.25);
+  box-shadow: 0 0 20px rgba(55,138,221,0.3), inset 0 0 10px rgba(255,255,255,0.1);
+  animation: ibubbleRise linear infinite;
+}
+@keyframes ibubbleRise {
+  0% { transform: translateY(110vh) scale(0.3); opacity: 0; }
+  5% { opacity: 0.7; }
+  90% { opacity: 0.4; }
+  100% { transform: translateY(-10vh) scale(1.2); opacity: 0; }
+}
+
+/* Floating orbs behind intro */
+.intro-orb {
+  position: absolute; border-radius: 50%; filter: blur(60px); pointer-events: none;
+  animation: orbFloat 15s ease-in-out infinite;
+}
+.intro-orb-1 { width: 500px; height: 500px; background: rgba(55,138,221,0.2); top: -150px; right: -100px; }
+.intro-orb-2 { width: 350px; height: 350px; background: rgba(24,95,165,0.15); bottom: -100px; left: -80px; animation-delay: -6s; }
+.intro-orb-3 { width: 250px; height: 250px; background: rgba(133,183,235,0.15); top: 30%; left: 20%; animation-delay: -12s; }
+@keyframes orbFloat {
+  0%,100% { transform: translate(0,0) scale(1); }
+  33% { transform: translate(30px,-40px) scale(1.05); }
+  66% { transform: translate(-20px,20px) scale(0.95); }
+}
+
+/* Intro content */
+.intro-content {
+  position: relative; z-index: 10;
+  display: flex; flex-direction: column; align-items: center;
+  text-align: center;
+}
+.intro-logo {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(36px, 6vw, 60px);
+  font-weight: 700; color: white;
+  text-shadow: 0 0 40px rgba(55,138,221,0.8), 0 0 80px rgba(55,138,221,0.4);
+  opacity: 0; transform: translateY(40px);
+  animation: introReveal 1s cubic-bezier(0.4,0,0.2,1) 0.3s forwards;
+  letter-spacing: -1px;
+}
+.intro-logo .robot { font-size: clamp(32px,5vw,52px); display: inline-block; animation: robotWiggle 2s ease 1.5s infinite; }
+@keyframes robotWiggle { 0%,100%{transform:rotate(0)}25%{transform:rotate(-5deg)}75%{transform:rotate(5deg)} }
+.intro-cn {
+  color: #85B7EB; font-size: clamp(14px,2.5vw,18px);
+  margin-top: 12px; letter-spacing: 3px;
+  opacity: 0; transform: translateY(20px);
+  animation: introReveal 0.8s ease 0.8s forwards;
+  font-family: 'Noto Sans SC', sans-serif;
+}
+.intro-tagline {
+  margin-top: 20px; color: rgba(181,212,244,0.85);
+  font-size: clamp(12px,1.8vw,15px); max-width: 520px; line-height: 1.9;
+  opacity: 0; transform: translateY(20px);
+  animation: introReveal 0.8s ease 1.3s forwards;
+}
+.intro-dots {
+  display: flex; gap: 10px; margin-top: 36px;
+  opacity: 0; animation: introReveal 0.5s ease 2s forwards;
+}
+.intro-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: rgba(55,138,221,0.6);
+  animation: dotPulse 1.2s ease-in-out infinite alternate;
+}
+.intro-dot:nth-child(2) { animation-delay: 0.2s; background: rgba(133,183,235,0.7); }
+.intro-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes introReveal { to { opacity: 1; transform: translateY(0); } }
+@keyframes dotPulse { from{transform:scale(1);opacity:0.5} to{transform:scale(1.6);opacity:1} }
+
+/* Luxury progress bar for intro */
+.intro-progress-wrap {
+  width: 280px; height: 2px; background: rgba(255,255,255,0.1);
+  border-radius: 99px; margin-top: 40px; overflow: hidden;
+  opacity: 0; animation: introReveal 0.5s ease 1.8s forwards;
+}
+.intro-progress-fill {
+  height: 100%; width: 0;
+  background: linear-gradient(90deg, #378ADD, #85B7EB, #fff, #85B7EB, #378ADD);
+  background-size: 200% 100%;
+  border-radius: 99px;
+  animation: introProgressFill 3.5s cubic-bezier(0.4,0,0.2,1) 2s forwards,
+             shimmerMove 1.5s linear 2s infinite;
+}
+@keyframes introProgressFill { from{width:0} to{width:100%} }
+@keyframes shimmerMove { 0%{background-position:100% 0} 100%{background-position:-100% 0} }
+
+/* Floating stars */
+.intro-star {
+  position: absolute; color: rgba(133,183,235,0.6);
+  font-size: 12px; pointer-events: none;
+  animation: starFloat linear infinite;
+}
+@keyframes starFloat {
+  0% { transform: translateY(0) rotate(0deg) scale(0.5); opacity: 0; }
+  10% { opacity: 0.8; transform: translateY(-20px) rotate(20deg) scale(1); }
+  90% { opacity: 0.4; }
+  100% { transform: translateY(-120px) rotate(360deg) scale(0.3); opacity: 0; }
+}
+
+/* Glow ring behind robot */
+.intro-glow-ring {
+  position: absolute; width: 340px; height: 340px; border-radius: 50%;
+  border: 1px solid rgba(55,138,221,0.3);
+  box-shadow: 0 0 60px rgba(55,138,221,0.15), inset 0 0 60px rgba(55,138,221,0.05);
+  animation: ringPulse 3s ease-in-out infinite;
+  pointer-events: none;
+}
+.intro-glow-ring-2 {
+  position: absolute; width: 480px; height: 480px; border-radius: 50%;
+  border: 1px solid rgba(133,183,235,0.15);
+  animation: ringPulse 4s ease-in-out 1s infinite;
+  pointer-events: none;
+}
+@keyframes ringPulse {
+  0%,100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.05); opacity: 1; }
+}
+
+/* ====== WELCOME OVERLAY (after login) ====== */
+#welcomeOverlay {
+  position: fixed; inset: 0; z-index: 9998;
+  background: linear-gradient(135deg, #020f1f, #042C53, #0C447C);
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; text-align: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.5s;
+}
+#welcomeOverlay.show { opacity: 1; pointer-events: all; }
+.welcome-emoji { font-size: 72px; margin-bottom: 20px; animation: welcomeBounce 1s ease infinite alternate; }
+@keyframes welcomeBounce { from{transform:translateY(0) scale(1)} to{transform:translateY(-12px) scale(1.05)} }
+.welcome-text {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(28px,5vw,48px); color: white; font-weight: 700;
+  text-shadow: 0 0 30px rgba(55,138,221,0.6);
+  margin-bottom: 12px;
+}
+.welcome-sub { color: #85B7EB; font-size: 16px; letter-spacing: 2px; }
+
+/* ====== SET USERNAME MODAL ====== */
+#usernameSetupOverlay {
+  position: fixed; inset: 0; z-index: 9997;
+  background: rgba(2,15,31,0.85); backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity 0.4s;
+}
+#usernameSetupOverlay.show { opacity: 1; pointer-events: all; }
+.username-setup-card {
+  background: white; border-radius: 24px; padding: 44px 40px;
+  max-width: 420px; width: 95vw; text-align: center;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.4), 0 0 0 1px rgba(133,183,235,0.3);
+  animation: cardIn 0.5s cubic-bezier(0.34,1.1,0.64,1);
+}
+.username-setup-icon { font-size: 52px; margin-bottom: 16px; }
+.username-setup-title { font-size: 22px; font-weight: 700; color: #042C53; margin-bottom: 6px; font-family: 'Playfair Display', serif; }
+.username-setup-sub { font-size: 13px; color: #6B7280; margin-bottom: 28px; line-height: 1.7; }
+.username-setup-input {
+  width: 100%; padding: 14px 18px; border: 2px solid #E8F0FE; border-radius: 12px;
+  font-size: 15px; outline: none; transition: all 0.3s; background: #FAFBFC; color: #042C53;
+  font-family: inherit; text-align: center; letter-spacing: 1px;
+}
+.username-setup-input:focus { border-color: #378ADD; background: white; box-shadow: 0 0 0 4px rgba(55,138,221,0.15); }
+.username-setup-btn {
+  width: 100%; margin-top: 16px; padding: 14px;
+  background: linear-gradient(135deg, #042C53, #185FA5);
+  color: white; border: none; border-radius: 12px; font-size: 15px; font-weight: 600;
+  cursor: pointer; transition: all 0.3s; font-family: inherit;
+}
+.username-setup-btn:hover { background: linear-gradient(135deg, #185FA5, #378ADD); transform: translateY(-2px); }
+
+/* ====== LOADING SCREEN ====== */
+#appLoading {
+  position: fixed; inset: 0;
+  background: linear-gradient(135deg, #020f1f, #042C53);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 9996; transition: opacity 0.6s; display: none;
+}
+#appLoading.active { display: flex; }
+#appLoading.hide { opacity: 0; pointer-events: none; }
+.loading-logo { font-family:'Playfair Display',serif; color: white; font-size: 32px; font-weight: 700; margin-bottom: 8px; }
+.loading-cn { color: #85B7EB; font-size: 13px; margin-bottom: 40px; letter-spacing: 2px; }
+.loading-bar { width: 220px; height: 3px; background: rgba(255,255,255,0.12); border-radius: 99px; overflow: hidden; }
+.loading-fill { height: 100%; background: linear-gradient(90deg, #378ADD, #85B7EB); border-radius: 99px; animation: fillBar 2s ease forwards; }
+@keyframes fillBar { from{width:0} to{width:100%} }
+
+/* ====== AUTH SCREEN ====== */
+#authScreen {
+  display: none; min-height: 100vh;
+  background: linear-gradient(135deg, #020f1f, #042C53, #0C447C);
+  align-items: center; justify-content: center; flex-direction: column;
+  position: relative; overflow: hidden;
+}
+#authScreen.show { display: flex; }
+
+/* Auth screen live ocean background */
+.auth-ocean { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.auth-wave {
+  position: absolute; bottom: 0; left: -50%;
+  width: 200%; border-radius: 43%;
+  animation: authWave 8s ease-in-out infinite;
+}
+.auth-wave:nth-child(1) { height: 160px; background: rgba(55,138,221,0.12); }
+.auth-wave:nth-child(2) { height: 120px; background: rgba(55,138,221,0.08); animation-duration: 10s; animation-delay: -2s; border-radius: 47%; }
+.auth-wave:nth-child(3) { height: 90px; background: rgba(133,183,235,0.1); animation-duration: 12s; animation-delay: -4s; border-radius: 40%; }
+@keyframes authWave {
+  0%,100% { transform: translateX(0); }
+  50% { transform: translateX(-8%); }
+}
+
+/* Auth floating bubbles */
+.auth-bubbles { position: absolute; inset: 0; pointer-events: none; }
+.abubble {
+  position: absolute; border-radius: 50%;
+  background: rgba(133,183,235,0.2);
+  box-shadow: 0 0 15px rgba(55,138,221,0.25), inset 0 0 8px rgba(255,255,255,0.08);
+  animation: abubbleRise linear infinite;
+}
+@keyframes abubbleRise {
+  0% { transform: translateY(105vh); opacity: 0; }
+  5% { opacity: 0.6; }
+  90% { opacity: 0.3; }
+  100% { transform: translateY(-10vh); opacity: 0; }
+}
+
+.auth-bg-orb {
+  position: absolute; border-radius: 50%; filter: blur(80px);
+  pointer-events: none; animation: orbFloat 20s ease-in-out infinite;
+}
+.auth-bg-orb.o1 { width: 450px; height: 450px; background: rgba(55,138,221,0.18); top:-150px; right:-100px; }
+.auth-bg-orb.o2 { width: 320px; height: 320px; background: rgba(24,95,165,0.13); bottom:-80px; left:-60px; animation-delay:-7s; }
+.auth-bg-orb.o3 { width: 200px; height: 200px; background: rgba(133,183,235,0.15); top:40%; left:15%; animation-delay:-13s; }
+
+.auth-card {
+  background: rgba(255,255,255,0.97); border-radius: 24px; padding: 48px;
+  width: 420px; max-width: 95vw;
+  box-shadow: 0 30px 60px rgba(0,0,0,0.35), 0 0 0 1px rgba(133,183,235,0.3), 0 0 80px rgba(55,138,221,0.15);
+  position: relative; z-index: 10;
+  animation: cardIn 0.7s cubic-bezier(0.34,1.1,0.64,1);
+}
+@keyframes cardIn { from{opacity:0;transform:translateY(40px) scale(0.93)} to{opacity:1;transform:none} }
+.auth-logo { text-align: center; margin-bottom: 28px; }
+.auth-logo h1 { font-size: 26px; font-weight: 700; color: #042C53; font-family: 'Playfair Display', serif; }
+.auth-logo .cn { color: #378ADD; font-size: 12px; letter-spacing: 2px; margin-top: 4px; display: block; font-family: 'Noto Sans SC', sans-serif; }
+.auth-tabs { display: flex; gap: 0; margin-bottom: 28px; border: 1.5px solid #E8F0FE; border-radius: 12px; overflow: hidden; }
+.auth-tab { flex: 1; padding: 10px; background: none; border: none; font-size: 13px; font-weight: 600; color: #6B7280; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+.auth-tab.active { background: #042C53; color: white; }
+.auth-field { margin-bottom: 16px; }
+.auth-field label { display: block; font-size: 11px; font-weight: 700; color: #042C53; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+.auth-field input { width: 100%; padding: 12px 16px; border: 2px solid #E8F0FE; border-radius: 10px; font-size: 14px; background: #FAFBFC; color: #042C53; outline: none; transition: all 0.2s; font-family: inherit; }
+.auth-field input:focus { border-color: #378ADD; background: white; box-shadow: 0 0 0 4px rgba(55,138,221,0.12); }
+.auth-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #042C53, #185FA5); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s; margin-top: 4px; font-family: inherit; }
+.auth-btn:hover { background: linear-gradient(135deg, #185FA5, #378ADD); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(55,138,221,0.4); }
+.auth-error { background: #FEE2E2; color: #DC2626; padding: 12px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 14px; border-left: 4px solid #DC2626; display: none; }
+.auth-divider { text-align: center; font-size: 11px; color: #9CA3AF; margin: 16px 0; position: relative; }
+.auth-divider::before { content:''; position:absolute; top:50%; left:0; right:0; height:1px; background:#E5E7EB; z-index:0; }
+.auth-divider span { background: white; padding: 0 12px; position: relative; z-index: 1; }
+.google-btn { width: 100%; padding: 12px; background: white; border: 2px solid #E5E7EB; border-radius: 10px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; font-family: inherit; color: #374151; }
+.google-btn:hover { border-color: #378ADD; box-shadow: 0 2px 12px rgba(55,138,221,0.2); transform: translateY(-1px); }
+.auth-lang-note { text-align: center; font-size: 11px; color: #9CA3AF; margin-top: 20px; }
+
+/* ====== APP SHELL ====== */
+#appShell { display: none; min-height: 100vh; }
+#appShell.show { display: block; }
+
+/* ====== LIVE BACKGROUND ====== */
+.app-bg {
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: var(--bg);
+  overflow: hidden;
+}
+.app-bg-orb {
+  position: absolute; border-radius: 50%; filter: blur(90px);
+  animation: orbFloat 20s ease-in-out infinite;
+}
+.app-bg-orb-1 { width: 500px; height: 500px; background: rgba(55,138,221,0.1); top: -100px; right: -100px; }
+.app-bg-orb-2 { width: 350px; height: 350px; background: rgba(24,95,165,0.08); bottom: 10%; left: -50px; animation-delay: -8s; }
+.app-bg-orb-3 { width: 250px; height: 250px; background: rgba(133,183,235,0.1); top: 40%; right: 15%; animation-delay: -16s; }
+
+/* ====== NAVBAR ====== */
+.navbar {
+  background: rgba(4,44,83,0.96);
+  padding: 0.9rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 500;
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(133,183,235,0.15);
+  box-shadow: 0 4px 30px rgba(0,0,0,0.2);
+}
+[data-theme="dark"] .navbar { background: rgba(5,13,25,0.97); }
+.nav-left { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.nav-logo { color: white; font-size: 17px; font-weight: 700; font-family: 'Playfair Display', serif; white-space: nowrap; }
+.nav-logo .cn { color: #85B7EB; font-size: 10px; display: block; margin-top: 1px; font-weight: 400; font-family: 'Noto Sans SC',sans-serif; }
+.view-toggle {
+  display: flex; background: rgba(255,255,255,0.08); border-radius: 20px; padding: 3px; gap: 2px;
+}
+.view-toggle-btn { padding: 5px 14px; border-radius: 16px; border: none; background: none; color: rgba(255,255,255,0.6); font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s; font-family: inherit; white-space: nowrap; }
+.view-toggle-btn.active { background: rgba(255,255,255,0.15); color: white; }
+
+/* Nav center links */
+.nav-center-links { display: flex; gap: 4px; }
+.nav-center-link { padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(133,183,235,0.25); color: rgba(255,255,255,0.8); font-size: 12px; font-weight: 500; background: none; cursor: pointer; transition: all 0.2s; font-family: inherit; white-space: nowrap; }
+.nav-center-link:hover, .nav-center-link.active { background: rgba(55,138,221,0.2); color: white; border-color: rgba(55,138,221,0.5); }
+
+.nav-right { display: flex; align-items: center; gap: 10px; }
+.nav-search { padding: 8px 16px; border-radius: 20px; border: 1px solid rgba(133,183,235,0.25); background: rgba(255,255,255,0.08); color: white; font-size: 13px; outline: none; width: 200px; transition: all 0.3s; font-family: inherit; }
+.nav-search::placeholder { color: rgba(133,183,235,0.6); }
+.nav-search:focus { border-color: #378ADD; background: rgba(255,255,255,0.12); width: 260px; box-shadow: 0 0 20px rgba(55,138,221,0.2); }
+
+/* Lang switcher */
+.lang-switcher { display: flex; background: rgba(255,255,255,0.06); border-radius: 16px; padding: 2px; gap: 1px; }
+.lang-btn { padding: 4px 10px; border-radius: 14px; border: none; background: none; color: rgba(255,255,255,0.55); font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+.lang-btn.active { background: rgba(55,138,221,0.25); color: white; }
+
+/* Dark mode toggle */
+.dark-toggle { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.08); border: 1px solid rgba(133,183,235,0.2); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: all 0.2s; }
+.dark-toggle:hover { background: rgba(255,255,255,0.15); }
+
+/* Notification bell */
+.notif-wrap { position: relative; }
+.notif-btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(133,183,235,0.2); color: white; width: 38px; height: 38px; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; position: relative; }
+.notif-btn:hover { background: rgba(255,255,255,0.15); }
+.notif-badge { position: absolute; top: -2px; right: -2px; background: #E24B4A; color: white; font-size: 9px; font-weight: 700; width: 16px; height: 16px; border-radius: 50%; display: none; align-items: center; justify-content: center; border: 2px solid #042C53; }
+.notif-badge.show { display: flex; }
+.notif-dropdown { position: absolute; right: 0; top: 46px; width: 340px; background: var(--white); border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.2); z-index: 1000; display: none; overflow: hidden; }
+.notif-dropdown.show { display: block; animation: dropIn 0.2s cubic-bezier(0.4,0,0.2,1); }
+@keyframes dropIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:none} }
+.notif-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.notif-header-title { font-weight: 600; font-size: 14px; color: var(--text); }
+.notif-clear { font-size: 11px; color: var(--sky); cursor: pointer; }
+.notif-list { max-height: 320px; overflow-y: auto; }
+.notif-item { padding: 14px 18px; border-bottom: 1px solid rgba(240,245,251,0.8); cursor: pointer; transition: background 0.15s; }
+.notif-item:hover { background: var(--surface); }
+.notif-item.unread { background: rgba(55,138,221,0.05); }
+.notif-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+.notif-msg { font-size: 12px; color: var(--subtext); line-height: 1.5; }
+.notif-time { font-size: 10px; color: var(--pale); margin-top: 4px; }
+.notif-empty { padding: 32px; text-align: center; color: #9CA3AF; font-size: 13px; }
+
+/* Profile */
+.profile-wrap { position: relative; }
+.profile-btn {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: linear-gradient(135deg, #378ADD, #185FA5);
+  border: 2px solid rgba(133,183,235,0.5);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 15px; color: white; font-weight: 700;
+  transition: all 0.3s; box-shadow: 0 4px 15px rgba(55,138,221,0.3);
+}
+.profile-btn:hover { transform: scale(1.1) rotate(5deg); box-shadow: 0 6px 20px rgba(55,138,221,0.5); }
+.profile-dropdown { position: absolute; right: 0; top: 48px; background: var(--white); border-radius: 16px; border: 1px solid var(--border); min-width: 220px; z-index: 1000; display: none; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.2); }
+.profile-dropdown.show { display: block; animation: dropIn 0.2s cubic-bezier(0.4,0,0.2,1); }
+.profile-header { padding: 18px; border-bottom: 1px solid var(--border); }
+.profile-name { color: var(--text); font-size: 14px; font-weight: 700; }
+.profile-email { color: var(--subtext); font-size: 11px; margin-top: 2px; }
+.profile-menu-item { padding: 12px 18px; color: var(--text); font-size: 13px; cursor: pointer; transition: background 0.15s; display: flex; align-items: center; gap: 10px; }
+.profile-menu-item:hover { background: var(--surface); }
+.profile-menu-item.danger { color: #F87171; }
+
+/* ====== USER VIEW ====== */
+#userView { padding: 2rem; }
+.hero-section { margin-bottom: 2rem; }
+.hero-title { font-size: clamp(20px,3vw,26px); font-weight: 700; color: var(--text); font-family: 'Playfair Display', serif; }
+.hero-sub { font-size: 13px; color: var(--sky); margin-top: 4px; font-family: 'Noto Sans SC', sans-serif; }
+.stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 2rem; }
+.stat-box { background: var(--card-bg); border-radius: 14px; padding: 18px 20px; border: 1px solid var(--border); box-shadow: var(--shadow); transition: transform 0.2s, box-shadow 0.2s; }
+.stat-box:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(55,138,221,0.15); }
+.stat-box-label { font-size: 11px; color: var(--sky); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500; }
+.stat-box-val { font-size: 26px; font-weight: 700; color: var(--text); margin-top: 4px; font-family: 'Playfair Display', serif; }
+.tools-label { font-size: 11px; font-weight: 700; color: var(--pale); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 14px; }
+.tools-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+.tool-card {
+  background: var(--card-bg); border-radius: 14px; padding: 20px;
+  border: 1px solid var(--border); border-left: 3px solid var(--sky);
+  cursor: pointer; transition: all 0.3s; position: relative; overflow: hidden;
+}
+.tool-card::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(55,138,221,0.05),transparent); opacity:0; transition:opacity 0.3s; }
+.tool-card:hover::before { opacity:1; }
+.tool-card:hover { transform:translateY(-5px); box-shadow:0 16px 40px rgba(55,138,221,0.2); border-color:var(--sky); border-left-color: #185FA5; }
+.tool-card-icon { font-size: 26px; margin-bottom: 10px; }
+.tool-card-title { font-size: 14px; font-weight: 700; color: var(--text); }
+.tool-card-cn { font-size: 10px; color: var(--sky); margin-top: 2px; font-family: 'Noto Sans SC', sans-serif; }
+.tool-card-desc { font-size: 11px; color: var(--subtext); margin-top: 8px; line-height: 1.7; }
+.tool-card-use { font-size: 10px; color: var(--pale); margin-top: 10px; }
+
+/* Contact section */
+.contact-section { margin-top: 2.5rem; margin-bottom: 2rem; }
+.contact-card {
+  background: var(--card-bg); border-radius: 16px; padding: 28px 32px;
+  border: 1px solid var(--border); border-left: 4px solid var(--sky);
+  box-shadow: var(--shadow);
+}
+.contact-dev-tag { font-size: 11px; font-weight: 700; color: var(--pale); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.contact-name { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.contact-desc { font-size: 12px; color: var(--subtext); margin-bottom: 18px; line-height: 1.7; }
+.contact-items { display: flex; gap: 14px; flex-wrap: wrap; }
+.contact-item {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface); border-radius: 10px; padding: 10px 16px;
+  border: 1px solid var(--border); transition: all 0.2s;
+  text-decoration: none;
+}
+.contact-item:hover { border-color: var(--sky); background: rgba(55,138,221,0.08); transform: translateY(-2px); }
+.contact-item-icon { font-size: 18px; }
+.contact-item-label { font-size: 10px; color: var(--pale); text-transform: uppercase; letter-spacing: 0.5px; }
+.contact-item-val { font-size: 13px; font-weight: 600; color: var(--text); }
+
+/* ====== ABOUT MODAL ====== */
+.about-section-header { font-size: 11px; font-weight: 700; color: var(--pale); text-transform: uppercase; letter-spacing: 1px; margin: 20px 0 8px; }
+.about-text { font-size: 13px; color: var(--subtext); line-height: 1.9; }
+.about-text strong { color: var(--text); }
+.about-highlight { background: linear-gradient(135deg, rgba(55,138,221,0.1), rgba(24,95,165,0.05)); border-left: 3px solid var(--sky); border-radius: 8px; padding: 14px 16px; margin: 12px 0; }
+
+/* ====== ADMIN VIEW ====== */
+#adminView { padding: 2rem; display: none; }
+#adminView.show { display: block; }
+.admin-header { margin-bottom: 2rem; display: flex; align-items: center; justify-content: space-between; }
+.admin-title { font-size: 22px; font-weight: 700; color: var(--text); font-family: 'Playfair Display', serif; }
+.admin-announce-btn { background: linear-gradient(135deg, var(--navy), var(--blue)); color: white; border: none; padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: inherit; display: flex; align-items: center; gap: 8px; }
+.admin-announce-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(55,138,221,0.3); }
+.admin-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 2rem; }
+.admin-stat { background: var(--card-bg); border-radius: 14px; padding: 20px; border: 1px solid var(--border); box-shadow: var(--shadow); transition: transform 0.2s; }
+.admin-stat:hover { transform: translateY(-3px); }
+.admin-stat-icon { font-size: 28px; margin-bottom: 8px; }
+.admin-stat-label { font-size: 11px; color: var(--subtext); text-transform: uppercase; font-weight: 500; }
+.admin-stat-val { font-size: 28px; font-weight: 700; color: var(--text); margin-top: 4px; background: linear-gradient(135deg, var(--navy), var(--blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-family: 'Playfair Display', serif; }
+.admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+.admin-section { background: var(--card-bg); border-radius: 16px; padding: 22px; border: 1px solid var(--border); box-shadow: var(--shadow); }
+.admin-section-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+.admin-section-full { background: var(--card-bg); border-radius: 16px; padding: 22px; border: 1px solid var(--border); box-shadow: var(--shadow); margin-bottom: 20px; }
+.user-table { width: 100%; border-collapse: collapse; }
+.user-table th { text-align: left; padding: 10px 12px; font-size: 10px; font-weight: 700; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid var(--border); }
+.user-table td { padding: 14px 12px; font-size: 13px; color: var(--text); border-bottom: 1px solid var(--border); vertical-align: middle; }
+.user-avatar-circle { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--sky), var(--blue)); display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: 700; flex-shrink: 0; }
+.user-name-cell { display: flex; align-items: center; gap: 10px; }
+.user-info-name { font-weight: 600; font-size: 13px; }
+.user-info-email { font-size: 11px; color: #9CA3AF; margin-top: 1px; }
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.badge-active { background: #D1FAE5; color: #059669; }
+.badge-inactive { background: #FEE2E2; color: #DC2626; }
+.badge-suspended { background: #FEF3C7; color: #D97706; }
+.badge-admin { background: linear-gradient(135deg, var(--navy), var(--blue)); color: white; }
+.action-icons { display: flex; gap: 6px; }
+.action-icon-btn { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: var(--white); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; transition: all 0.2s; color: var(--text); }
+.action-icon-btn:hover { border-color: var(--sky); background: var(--surface); transform: scale(1.1); }
+.action-icon-btn.danger:hover { border-color: var(--red); background: #FEF2F2; }
+.activity-list { display: flex; flex-direction: column; gap: 10px; max-height: 320px; overflow-y: auto; }
+.activity-item { display: flex; align-items: flex-start; gap: 12px; padding: 10px; border-radius: 10px; background: var(--surface); }
+.activity-icon-box { width: 36px; height: 36px; border-radius: 10px; background: var(--white); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; border: 1px solid var(--border); }
+.activity-text { font-size: 12px; color: var(--text); font-weight: 500; }
+.activity-user { font-size: 10px; color: var(--sky); margin-top: 2px; }
+.activity-time { font-size: 10px; color: #9CA3AF; margin-top: 2px; }
+.feedback-item { padding: 14px; border-radius: 10px; background: var(--surface); border-left: 3px solid var(--sky); margin-bottom: 10px; }
+.feedback-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.feedback-user { font-size: 12px; font-weight: 600; color: var(--text); }
+.feedback-time { font-size: 10px; color: #9CA3AF; }
+.feedback-msg { font-size: 13px; color: var(--subtext); line-height: 1.6; }
+.tool-usage-list { display: flex; flex-direction: column; gap: 10px; }
+.tool-usage-item { display: flex; align-items: center; gap: 12px; }
+.tool-usage-icon { font-size: 18px; width: 28px; text-align: center; }
+.tool-usage-info { flex: 1; }
+.tool-usage-name { font-size: 12px; font-weight: 600; color: var(--text); }
+.tool-usage-bar-wrap { height: 4px; background: var(--border); border-radius: 99px; margin-top: 4px; }
+.tool-usage-bar-fill { height: 100%; background: linear-gradient(90deg, var(--sky), var(--blue)); border-radius: 99px; transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
+.tool-usage-count { font-size: 11px; color: #6B7280; width: 50px; text-align: right; flex-shrink: 0; }
+.status-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.status-chip { display: flex; align-items: center; gap: 6px; padding: 10px 16px; background: #D1FAE5; border-radius: 10px; font-size: 12px; font-weight: 600; color: #059669; }
+
+/* ====== FEEDBACK FAB ====== */
+.feedback-fab { position: fixed; bottom: 28px; right: 28px; width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, var(--sky), var(--blue)); border: none; color: white; font-size: 22px; cursor: pointer; box-shadow: 0 8px 24px rgba(55,138,221,0.4); transition: all 0.3s; z-index: 400; display: none; }
+.feedback-fab.show { display: flex; align-items: center; justify-content: center; }
+.feedback-fab:hover { transform: scale(1.1) rotate(10deg); box-shadow: 0 12px 30px rgba(55,138,221,0.5); }
+
+/* ====== MODALS ====== */
+.modal-overlay { position: fixed; inset: 0; background: rgba(2,15,31,0.65); backdrop-filter: blur(6px); z-index: 600; display: none; align-items: center; justify-content: center; padding: 20px; }
+.modal-overlay.show { display: flex; }
+.modal { background: var(--white); border-radius: 20px; padding: 28px; width: 100%; max-width: 500px; box-shadow: 0 30px 60px rgba(0,0,0,0.3); animation: modalIn 0.25s cubic-bezier(0.34,1.1,0.64,1); max-height: 90vh; overflow-y: auto; color: var(--text); }
+@keyframes modalIn { from{opacity:0;transform:translateY(20px) scale(0.96)} to{opacity:1;transform:none} }
+.modal-title { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 6px; font-family: 'Playfair Display', serif; }
+.modal-sub { font-size: 13px; color: var(--subtext); margin-bottom: 22px; line-height: 1.6; }
+.modal-field { margin-bottom: 16px; }
+.modal-field label { display: block; font-size: 11px; font-weight: 700; color: var(--text); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.modal-field input, .modal-field textarea, .modal-field select { width: 100%; padding: 11px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; font-family: inherit; background: var(--surface); color: var(--text); outline: none; transition: all 0.2s; resize: vertical; }
+.modal-field input:focus, .modal-field textarea:focus { border-color: var(--sky); background: var(--white); box-shadow: 0 0 0 4px rgba(55,138,221,0.1); }
+.modal-actions { display: flex; gap: 10px; margin-top: 6px; }
+.modal-btn { flex: 1; padding: 12px; border-radius: 10px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+.modal-btn.primary { background: linear-gradient(135deg, var(--navy), var(--blue)); color: white; }
+.modal-btn.primary:hover { background: linear-gradient(135deg, var(--blue), var(--sky)); transform: translateY(-1px); }
+.modal-btn.secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+.modal-close-x { float: right; background: none; border: none; font-size: 20px; color: #9CA3AF; cursor: pointer; margin-top: -4px; }
+
+/* ====== TOOL PANEL ====== */
+.panel-overlay { position: fixed; inset: 0; background: rgba(2,15,31,0.55); z-index: 700; display: none; }
+.panel-overlay.show { display: block; }
+.side-panel { position: fixed; right: 0; top: 0; bottom: 0; width: 480px; background: var(--white); z-index: 800; transform: translateX(100%); transition: transform 0.38s cubic-bezier(0.4,0,0.2,1); box-shadow: -10px 0 50px rgba(0,0,0,0.2); overflow-y: auto; color: var(--text); }
+.side-panel.open { transform: translateX(0); }
+.panel-header { padding: 22px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--white); z-index: 1; }
+.panel-title { font-size: 18px; font-weight: 700; color: var(--text); font-family: 'Playfair Display', serif; }
+.panel-cn { font-size: 11px; color: var(--sky); margin-top: 2px; font-family: 'Noto Sans SC', sans-serif; }
+.panel-close { background: none; border: none; font-size: 22px; color: #9CA3AF; cursor: pointer; transition: color 0.2s; }
+.panel-close:hover { color: var(--text); }
+.panel-body { padding: 24px; }
+.panel-body label { display: block; font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 6px; margin-top: 14px; }
+.panel-body label:first-child { margin-top: 0; }
+.panel-body input, .panel-body textarea, .panel-body select { width: 100%; padding: 10px 14px; border: 2px solid var(--border); border-radius: 8px; font-size: 14px; font-family: inherit; background: var(--surface); color: var(--text); outline: none; transition: border-color 0.2s; margin-bottom: 4px; }
+.panel-body input:focus, .panel-body textarea:focus { border-color: var(--sky); background: var(--white); }
+.panel-body input[type="file"] { border-style: dashed; }
+.panel-submit { width: 100%; padding: 12px; background: linear-gradient(135deg, var(--navy), var(--blue)); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 14px; transition: all 0.2s; font-family: inherit; }
+.panel-submit:hover { background: linear-gradient(135deg, var(--blue), var(--sky)); transform: translateY(-1px); }
+.panel-divider { text-align: center; font-size: 11px; color: #9CA3AF; margin: 14px 0; }
+.csv-hint { font-size: 10px; color: var(--pale); margin-bottom: 6px; }
+.result-box { margin-top: 16px; padding: 14px 16px; background: var(--surface); border-radius: 10px; border-left: 3px solid var(--sky); font-size: 13px; color: var(--text); white-space: pre-wrap; line-height: 1.8; }
+.chart-box { margin-top: 16px; background: var(--surface); border-radius: 10px; padding: 16px; }
+.loading-text { color: var(--sky); font-size: 13px; font-style: italic; }
+
+/* Tool intro screen */
+.tool-intro { position: fixed; inset: 0; background: linear-gradient(135deg, #020f1f, #042C53, #0C447C); z-index: 900; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.4s; overflow: hidden; }
+.tool-intro.show { opacity: 1; pointer-events: all; }
+.tool-intro-icon { font-size: 72px; margin-bottom: 16px; animation: iconBounce 1.2s ease infinite alternate; }
+@keyframes iconBounce { from{transform:translateY(0) scale(1)} to{transform:translateY(-14px) scale(1.05)} }
+.tool-intro-title { font-size: 30px; font-weight: 700; color: white; margin-bottom: 4px; font-family: 'Playfair Display', serif; }
+.tool-intro-cn { font-size: 16px; color: #85B7EB; margin-bottom: 16px; font-family: 'Noto Sans SC', sans-serif; }
+.tool-intro-desc { font-size: 13px; color: rgba(133,183,235,0.85); max-width: 420px; text-align: center; line-height: 1.9; }
+.tool-intro-bar-wrap { width: 300px; height: 3px; background: rgba(255,255,255,0.1); border-radius: 99px; margin-top: 36px; overflow: hidden; }
+.tool-intro-bar { height: 100%; background: linear-gradient(90deg, #378ADD, #85B7EB); border-radius: 99px; }
+@keyframes fillBar { from{width:0} to{width:100%} }
+
+/* Tabs */
+.tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+.tab-btn { padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: none; font-size: 12px; font-weight: 500; color: var(--subtext); cursor: pointer; transition: all 0.2s; font-family: inherit; }
+.tab-btn.active { background: var(--navy); color: white; border-color: var(--navy); }
+
+/* Toast */
+.toast { position: fixed; bottom: 90px; right: 28px; background: var(--navy); color: white; padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 500; box-shadow: 0 8px 24px rgba(0,0,0,0.3); z-index: 9999; transform: translateY(20px); opacity: 0; transition: all 0.3s; }
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.success { background: #059669; }
+.toast.error { background: var(--red); }
+
+/* File upload area styling */
+.file-upload-area {
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  background: var(--surface);
+  transition: all 0.3s;
+  cursor: pointer;
+  margin-bottom: 12px;
+}
+.file-upload-area:hover {
+  border-color: var(--sky);
+  background: rgba(55,138,221,0.05);
+}
+.file-upload-area .upload-icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+.file-upload-area .upload-text {
+  font-size: 13px;
+  color: var(--subtext);
+}
+.file-upload-area .upload-hint {
+  font-size: 11px;
+  color: var(--pale);
+  margin-top: 4px;
+}
+
+/* Stats visualization in results */
+.stats-result-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 16px;
+}
+.stat-result-item {
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+}
+.stat-result-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--sky);
+}
+.stat-result-label {
+  font-size: 11px;
+  color: var(--subtext);
+  margin-top: 4px;
+}
+
+@media (max-width: 900px) {
+  .tools-grid, .admin-stats, .stats-row { grid-template-columns: 1fr 1fr; }
+  .admin-grid { grid-template-columns: 1fr; }
+  .side-panel { width: 100%; }
+}
+@media (max-width: 600px) {
+  .tools-grid { grid-template-columns: 1fr; }
+  .stats-row { grid-template-columns: 1fr 1fr; }
+  .admin-stats { grid-template-columns: 1fr 1fr; }
+  .nav-search { display: none; }
+  .nav-center-links { display: none; }
+  .lang-switcher { display: none; }
+  #userView, #adminView { padding: 1rem; }
+  .stats-result-grid { grid-template-columns: 1fr; }
+}
+</style>
+<base target="_blank">
+</head>
+<body>
+
+<!-- ====== LUXURY INTRO SCREEN ====== -->
+<div id="luxuryIntro">
+  <div class="intro-orb intro-orb-1"></div>
+  <div class="intro-orb intro-orb-2"></div>
+  <div class="intro-orb intro-orb-3"></div>
+  <div class="intro-ocean">
+    <div class="intro-wave"></div>
+    <div class="intro-wave"></div>
+    <div class="intro-wave"></div>
+  </div>
+  <div class="intro-bubbles" id="introBubbles"></div>
+  <div class="intro-glow-ring"></div>
+  <div class="intro-glow-ring-2"></div>
+  <div class="intro-content">
+    <div class="intro-logo">Artificial Intelligence Dashboard <span class="robot">🤖</span></div>
+    <div class="intro-cn">人工智能工具平台 · AI Tools Platform</div>
+    <div class="intro-tagline">
+      9 powerful AI tools for Chinese business —<br>
+      sentiment analysis · 情感分析, sales forecasting · 销售预测,<br>
+      recommendations · 商品推荐, and more!<br>
+      <br>Built by Jason Antonio 🚀
+    </div>
+    <div class="intro-progress-wrap">
+      <div class="intro-progress-fill"></div>
+    </div>
+    <div class="intro-dots">
+      <div class="intro-dot"></div>
+      <div class="intro-dot"></div>
+      <div class="intro-dot"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== WELCOME OVERLAY (after login) ====== -->
+<div id="welcomeOverlay">
+  <div class="welcome-emoji" id="welcomeEmoji">👋</div>
+  <div class="welcome-text" id="welcomeText">Welcome!</div>
+  <div class="welcome-sub" id="welcomeSub">AI Dashboard · 人工智能工具平台</div>
+</div>
+
+<!-- ====== USERNAME SETUP OVERLAY ====== -->
+<div id="usernameSetupOverlay">
+  <div class="username-setup-card">
+    <div class="username-setup-icon">✨</div>
+    <div class="username-setup-title">Set Your Username</div>
+    <div class="username-setup-sub">
+      请设置您的用户名<br>
+      Choose a unique username that will appear on your profile and greeting. You can change it anytime by tapping your avatar.
+    </div>
+    <input type="text" class="username-setup-input" id="usernameSetupInput" placeholder="e.g. jason_ai · 您的用户名" maxlength="30">
+    <button class="username-setup-btn" onclick="saveNewUsername()">Confirm Username · 确认</button>
+  </div>
+</div>
+
+
+<!-- ====== AUTH SCREEN ====== -->
+<div id="authScreen">
+  <div class="auth-ocean">
+    <div class="auth-wave"></div>
+    <div class="auth-wave"></div>
+    <div class="auth-wave"></div>
+  </div>
+  <div class="auth-bubbles" id="authBubbles"></div>
+  <div class="auth-bg-orb o1"></div>
+  <div class="auth-bg-orb o2"></div>
+  <div class="auth-bg-orb o3"></div>
+
+  <div class="auth-card">
+    <div class="auth-logo">
+      <h1>AI Dashboard 🤖</h1>
+      <span class="cn">人工智能工具平台 · Please login to continue</span>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">Login 登录</button>
+      <button class="auth-tab" onclick="switchAuthTab('signup')">Sign Up 注册</button>
+    </div>
+    <div id="authError" class="auth-error"></div>
+
+    <!-- Login form -->
+    <div id="loginForm">
+      <div class="auth-field">
+        <label>Email 邮箱</label>
+        <input type="email" id="loginEmail" placeholder="your@email.com" onkeydown="if(event.key==='Enter')doEmailLogin()">
+      </div>
+      <div class="auth-field">
+        <label>Password 密码</label>
+        <input type="password" id="loginPassword" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doEmailLogin()">
+      </div>
+      <button class="auth-btn" onclick="doEmailLogin()">Login 登录</button>
+    </div>
+
+    <!-- Signup form -->
+    <div id="signupForm" style="display:none">
+      <div class="auth-field">
+        <label>Full Name 姓名</label>
+        <input type="text" id="signupName" placeholder="Enter your full name">
+      </div>
+      <div class="auth-field">
+        <label>Email 邮箱</label>
+        <input type="email" id="signupEmail" placeholder="your@email.com">
+      </div>
+      <div class="auth-field">
+        <label>Password 密码</label>
+        <input type="password" id="signupPassword" placeholder="Create a password (min 6 chars)">
+      </div>
+      <button class="auth-btn" onclick="doEmailSignup()">Create Account 创建账户</button>
+    </div>
+
+    <div class="auth-divider"><span>or · 或者</span></div>
+    <button class="google-btn" onclick="doGoogleLogin()">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      Continue with Google · 谷歌登录
+    </button>
+    <div class="auth-lang-note">Built by Jason Antonio 🚀 · AI Dashboard</div>
+  </div>
+</div>
+
+<!-- ====== APP SHELL ====== -->
+<div id="appShell">
+  <!-- Live background orbs -->
+  <div class="app-bg">
+    <div class="app-bg-orb app-bg-orb-1"></div>
+    <div class="app-bg-orb app-bg-orb-2"></div>
+    <div class="app-bg-orb app-bg-orb-3"></div>
+  </div>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="nav-left">
+      <div class="nav-logo">AI Dashboard <span class="cn">人工智能工具平台</span></div>
+      <div class="view-toggle" id="viewToggle" style="display:none">
+        <button class="view-toggle-btn active" id="userViewBtn" onclick="switchView('user')">🤖 User</button>
+        <button class="view-toggle-btn" id="adminViewBtn" onclick="switchView('admin')">👑 Admin</button>
+      </div>
+      <div class="nav-center-links">
+        <button class="nav-center-link active" onclick="scrollToTop()">总览 Home</button>
+        <button class="nav-center-link" onclick="scrollToTools()">工具 Tools</button>
+        <button class="nav-center-link" onclick="openAboutModal()">关于 About</button>
+      </div>
+    </div>
+    <input class="nav-search" type="text" placeholder="🔍 Search tools... 搜索工具" id="toolSearch" oninput="searchTools(this.value)">
+    <div class="nav-right">
+      <div class="lang-switcher">
+        <button class="lang-btn active" id="langEN" onclick="setLang('en')">EN</button>
+        <button class="lang-btn" id="langZH" onclick="setLang('zh')">中文</button>
+        <button class="lang-btn" id="langBoth" onclick="setLang('both')">双语</button>
+      </div>
+      <button class="dark-toggle" onclick="toggleDark()" title="Toggle dark mode">🌙</button>
+      <div class="notif-wrap">
+        <button class="notif-btn" onclick="toggleNotif()" title="Notifications">
+          🔔
+          <span class="notif-badge" id="notifBadge"></span>
+        </button>
+        <div class="notif-dropdown" id="notifDropdown">
+          <div class="notif-header">
+            <span class="notif-header-title">Notifications 通知</span>
+            <span class="notif-clear" onclick="markAllRead()">Mark all read</span>
+          </div>
+          <div class="notif-list" id="notifList"><div class="notif-empty">No notifications yet 暂无通知</div></div>
+        </div>
+      </div>
+      <div class="profile-wrap">
+        <button class="profile-btn" id="profileBtn" onclick="toggleProfile()" title="Profile & Settings">👤</button>
+        <div class="profile-dropdown" id="profileDropdown">
+          <div class="profile-header">
+            <div class="profile-name" id="profileName">Loading...</div>
+            <div class="profile-email" id="profileEmail"></div>
+          </div>
+          <div class="profile-menu-item" onclick="openChangeUsernameModal()">✏️ Change Username · 改名</div>
+          <div class="profile-menu-item" onclick="toggleDark()">🌙 Toggle Dark Mode · 深色模式</div>
+          <div class="profile-menu-item danger" onclick="doLogout()">🚪 Logout 退出</div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- USER VIEW -->
+  <div id="userView">
+    <div class="hero-section" id="heroTop">
+      <div class="hero-animate">
+        <div class="hero-title" id="heroGreeting">Good day, <span id="heroName">User</span>!</div>
+        <div class="hero-sub" id="heroSub">9 AI tools to supercharge your Chinese business · 9个AI工具助力您的业务</div>
+      </div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-box"><div class="stat-box-label">Tools Available · 工具数量</div><div class="stat-box-val">9</div></div>
+      <div class="stat-box"><div class="stat-box-label">Total Uses · 总使用次数</div><div class="stat-box-val" id="statUses">—</div></div>
+      <div class="stat-box"><div class="stat-box-label">Status · 状态</div><div class="stat-box-val" style="font-size:14px;color:#059669;">Operational ✓</div></div>
+      <div class="stat-box"><div class="stat-box-label">Platform · 平台</div><div class="stat-box-val" style="font-size:13px;">AI Dashboard</div></div>
+    </div>
+    <div class="tools-label" id="toolsAnchor">AVAILABLE AI TOOLS · 可用AI工具 &nbsp;·&nbsp; <span id="toolCount">9 tools ready · 9个工具已就绪</span></div>
+    <div class="tools-grid" id="toolsGrid"></div>
+
+    <!-- Contact Section -->
+    <div class="contact-section">
+      <div class="contact-card">
+        <div class="contact-dev-tag">👨‍💻 Developer · 开发者</div>
+        <div class="contact-name">Jason Antonio</div>
+        <div class="contact-desc">
+          Built this platform to bring powerful AI tools to Chinese business — <em>专为中国商业打造的人工智能工具平台</em>.<br>
+          Feel free to reach out for collaborations, feedback, or questions!
+        </div>
+        <div class="contact-items">
+          <a class="contact-item" href="https://instagram.com/jasonantonio.id" target="_blank">
+            <div class="contact-item-icon">📸</div>
+            <div>
+              <div class="contact-item-label">Instagram</div>
+              <div class="contact-item-val">@jasonantonio.id</div>
+            </div>
+          </a>
+          <div class="contact-item">
+            <div class="contact-item-icon">📞</div>
+            <div>
+              <div class="contact-item-label">Phone · 电话</div>
+              <div class="contact-item-val">0852-6455-2796</div>
+            </div>
+          </div>
+          <div class="contact-item">
+            <div class="contact-item-icon">💬</div>
+            <div>
+              <div class="contact-item-label">WeChat · 微信</div>
+              <div class="contact-item-val">wxid_pxnd52vvyqtx22</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN VIEW -->
+  <div id="adminView">
+    <div class="admin-header">
+      <div>
+        <div class="admin-title">👑 Admin Dashboard · 管理员控制台</div>
+        <div style="font-size:13px;color:var(--subtext);margin-top:2px;">Platform management & analytics · 平台管理与数据分析</div>
+      </div>
+      <button class="admin-announce-btn" onclick="openAnnounceModal()">📢 Global Announcement · 全局公告</button>
+    </div>
+    <div class="admin-stats">
+      <div class="admin-stat"><div class="admin-stat-icon">👥</div><div class="admin-stat-label">Total Users</div><div class="admin-stat-val" id="statUsers">—</div></div>
+      <div class="admin-stat"><div class="admin-stat-icon">😴</div><div class="admin-stat-label">Inactive (30d+)</div><div class="admin-stat-val" id="statInactive">—</div></div>
+      <div class="admin-stat"><div class="admin-stat-icon">🤖</div><div class="admin-stat-label">Tool Uses</div><div class="admin-stat-val" id="statToolUses">—</div></div>
+      <div class="admin-stat"><div class="admin-stat-icon">🟢</div><div class="admin-stat-label">System Status</div><div class="admin-stat-val" style="font-size:14px;-webkit-text-fill-color:#059669;">Online</div></div>
+    </div>
+    <div class="admin-grid">
+      <div class="admin-section">
+        <div class="admin-section-title">👥 Registered Users · 注册用户</div>
+        <div class="tabs">
+          <button class="tab-btn active" onclick="filterUsers('all',this)">All Users</button>
+          <button class="tab-btn" onclick="filterUsers('inactive',this)">Inactive</button>
+          <button class="tab-btn" onclick="filterUsers('suspended',this)">Suspended</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="user-table">
+            <thead><tr><th>User</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="usersTableBody"><tr><td colspan="3" style="text-align:center;color:#9CA3AF;padding:20px;">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="admin-section">
+        <div class="admin-section-title">📋 Recent Activity · 最近活动</div>
+        <div class="activity-list" id="activityList"><div style="color:#9CA3AF;font-size:13px;text-align:center;padding:20px;">Loading...</div></div>
+      </div>
+    </div>
+    <div class="admin-grid">
+      <div class="admin-section">
+        <div class="admin-section-title">🔧 Tool Usage · 工具使用情况</div>
+        <div class="tool-usage-list" id="toolUsageList"><div style="color:#9CA3AF;font-size:13px;text-align:center;padding:20px;">Loading...</div></div>
+      </div>
+      <div class="admin-section">
+        <div class="admin-section-title">💬 Recent Feedback · 用户反馈</div>
+        <div id="feedbackList" style="max-height:320px;overflow-y:auto;"><div style="color:#9CA3AF;font-size:13px;text-align:center;padding:20px;">Loading...</div></div>
+      </div>
+    </div>
+    <div class="admin-section-full">
+      <div class="admin-section-title">⚙️ System Status · 系统状态</div>
+      <div class="status-row">
+        <div class="status-chip">🟢 API Server</div>
+        <div class="status-chip">🟢 Firebase Auth</div>
+        <div class="status-chip">🟢 Firestore DB</div>
+        <div class="status-chip">🟢 ML Models</div>
+        <div class="status-chip">🟢 Image Processing</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Feedback FAB -->
+<button class="feedback-fab show" id="feedbackFab" onclick="openFeedbackModal()" title="Send feedback · 发送反馈">💬</button>
+
+<!-- ====== TOOL INTRO SCREEN ====== -->
+<div class="tool-intro" id="toolIntro">
+  <div class="tool-intro-icon" id="introIcon">🤖</div>
+  <div class="tool-intro-title" id="introTitle"></div>
+  <div class="tool-intro-cn" id="introCn"></div>
+  <div class="tool-intro-desc" id="introDesc"></div>
+  <div class="tool-intro-bar-wrap"><div class="tool-intro-bar" id="introBar"></div></div>
+</div>
+
+<!-- ====== SIDE PANEL ====== -->
+<div class="panel-overlay" id="panelOverlay" onclick="closePanel()"></div>
+<div class="side-panel" id="sidePanel">
+  <div class="panel-header">
+    <div>
+      <div class="panel-title" id="panelTitle"></div>
+      <div class="panel-cn" id="panelCn"></div>
+    </div>
+    <button class="panel-close" onclick="closePanel()">✕</button>
+  </div>
+  <div class="panel-body" id="panelBody"></div>
+</div>
+
+<!-- ====== MODALS ====== -->
+
+<!-- Feedback Modal -->
+<div class="modal-overlay" id="feedbackModal">
+  <div class="modal">
+    <button class="modal-close-x" onclick="closeModal('feedbackModal')">✕</button>
+    <div class="modal-title">💬 Send Feedback · 发送反馈</div>
+    <div class="modal-sub">Your message goes directly to the admin. · 您的反馈将直接发送给管理员。</div>
+    <div class="modal-field">
+      <label>Your Message · 您的消息</label>
+      <textarea id="feedbackText" rows="4" placeholder="Share your thoughts, bugs, or feature requests... 分享您的想法、问题或功能建议..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="closeModal('feedbackModal')">Cancel 取消</button>
+      <button class="modal-btn primary" onclick="submitFeedback()">Send 发送</button>
+    </div>
+  </div>
+</div>
+
+<!-- Announce Modal -->
+<div class="modal-overlay" id="announceModal">
+  <div class="modal">
+    <button class="modal-close-x" onclick="closeModal('announceModal')">✕</button>
+    <div class="modal-title">📢 Global Announcement · 全局公告</div>
+    <div class="modal-sub">Send a message to all users · 向所有用户发送消息</div>
+    <div class="modal-field">
+      <label>Title · 标题</label>
+      <input type="text" id="announceTitle" placeholder="Announcement title · 公告标题">
+    </div>
+    <div class="modal-field">
+      <label>Message · 消息</label>
+      <textarea id="announceMsg" rows="4" placeholder="Your announcement... · 您的公告内容..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="closeModal('announceModal')">Cancel 取消</button>
+      <button class="modal-btn primary" onclick="sendAnnouncement()">Send to All 📢</button>
+    </div>
+  </div>
+</div>
+
+<!-- Remind Modal -->
+<div class="modal-overlay" id="remindModal">
+  <div class="modal">
+    <button class="modal-close-x" onclick="closeModal('remindModal')">✕</button>
+    <div class="modal-title">📬 Send Reminder · 发送提醒</div>
+    <div class="modal-sub">Send a private notification to <strong id="remindTarget"></strong>.</div>
+    <div class="modal-field">
+      <label>Message · 消息</label>
+      <textarea id="remindMsg" rows="3" placeholder="Your reminder message... · 提醒内容..."></textarea>
+    </div>
+    <input type="hidden" id="remindUid">
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="closeModal('remindModal')">Cancel 取消</button>
+      <button class="modal-btn primary" onclick="sendReminder()">Send Reminder</button>
+    </div>
+  </div>
+</div>
+
+<!-- Change Username Modal -->
+<div class="modal-overlay" id="changeUsernameModal">
+  <div class="modal">
+    <button class="modal-close-x" onclick="closeModal('changeUsernameModal')">✕</button>
+    <div class="modal-title">✏️ Change Username · 更改用户名</div>
+    <div class="modal-sub">You can update your display name anytime. · 您可以随时更新您的显示名称。</div>
+    <div class="modal-field">
+      <label>New Username · 新用户名</label>
+      <input type="text" id="newUsernameInput" placeholder="Enter new username · 输入新用户名" maxlength="30" onkeydown="if(event.key==='Enter')saveUsernameChange()">
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="closeModal('changeUsernameModal')">Cancel 取消</button>
+      <button class="modal-btn primary" onclick="saveUsernameChange()">Save 保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- About Modal -->
+<div class="modal-overlay" id="aboutModal">
+  <div class="modal" style="max-width:580px;">
+    <button class="modal-close-x" onclick="closeModal('aboutModal')">✕</button>
+    <div class="modal-title">🤖 About AI Dashboard · 关于</div>
+    <div class="modal-sub">Built by Jason Antonio · 由 Jason Antonio 开发</div>
+
+    <div class="about-highlight">
+      <strong>Why was this built? · 为什么要建立这个平台？</strong><br>
+      <span style="font-size:13px;color:var(--subtext);line-height:1.9;">
+        This platform was created to bridge the gap between advanced AI technology and Chinese business operations. Many businesses in China and Southeast Asia need intelligent tools but lack accessible, user-friendly solutions.
+        <br><br>
+        这个平台的创建旨在弥合先进人工智能技术与中国商业运营之间的差距。中国及东南亚的许多企业需要智能工具，但缺乏易于访问、用户友好的解决方案。
+      </span>
+    </div>
+
+    <div class="about-section-header">🎯 Objective · 目标</div>
+    <div class="about-text">
+      To empower businesses with <strong>9 powerful AI tools</strong> that analyze Chinese customer reviews, predict sales, detect fake reviews, recommend products, and more — all in one beautiful, bilingual platform.
+      <br><br>
+      为企业提供 <strong>9个强大的AI工具</strong>，用于分析中文客户评论、预测销售、检测虚假评论、推荐产品等——全部集成在一个美观的双语平台上。
+    </div>
+
+    <div class="about-section-header">🛠️ Tools Included · 包含工具</div>
+    <div class="about-text">
+      Sentiment Analysis · 情感分析 &nbsp;·&nbsp; Keyword Extractor · 关键词提取 &nbsp;·&nbsp; OCR Scanner · 文字识别 &nbsp;·&nbsp; Sales Forecast · 销售预测 &nbsp;·&nbsp; Churn Prediction · 流失预测 &nbsp;·&nbsp; Recommendations · 商品推荐 &nbsp;·&nbsp; Fake Review Detector · 虚假评论检测 &nbsp;·&nbsp; Image Classifier · 图像分类 &nbsp;·&nbsp; Price Prediction · 价格预测
+    </div>
+
+    <div class="about-section-header">👨‍💻 Developer · 开发者</div>
+    <div class="about-text">
+      <strong>Jason Antonio</strong> — Developer passionate about AI, data, and building tools that make a real difference for businesses in the Chinese market.
+      <br><br>
+      <strong>Jason Antonio</strong> — 热衷于人工智能、数据分析，致力于为中国市场的企业打造真正有用的工具。
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- ====== FIREBASE CONFIG ====== -->
+<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyC6Ivb4WV1g9XHlRKdKq2rU7y5Obfu_v8w",
+    authDomain: "chinese-business-project.firebaseapp.com",
+    projectId: "chinese-business-project",
+    storageBucket: "chinese-business-project.firebasestorage.app",
+    messagingSenderId: "297548833137",
+    appId: "1:297548833137:web:60525513c5d3ed8a35d6d0"
+};
+firebase.initializeApp(firebaseConfig);
+const fbAuth = firebase.auth();
+const fbDb = firebase.firestore();
+
+// ====== APP STATE ======
+let currentUser = null;
+let currentView = 'user';
+let allUsersCache = [];
+let notifInterval = null;
+let currentLang = 'both';
+let isDark = false;
+let isReturningUser = false;
+let hasShownWelcome = false;
+let introCompleted = false;  // ensure intro plays fully before proceeding
+
+// ====== SESSION PERSISTENCE HELPERS ======
+function getStorageItem(key) {
+  try { return localStorage.getItem(key); } catch(e) { return null; }
+}
+function setStorageItem(key, value) {
+  try { localStorage.setItem(key, value); } catch(e) {}
+}
+function removeStorageItem(key) {
+  try { localStorage.removeItem(key); } catch(e) {}
+}
+
+// ====== LUXURY INTRO ======
+function createBubbles(containerId, count) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  for (let i = 0; i < count; i++) {
+    const b = document.createElement('div');
+    const size = Math.random() * 60 + 15;
+    const cls = containerId === 'introBubbles' ? 'ibubble' : 'abubble';
+    b.className = cls;
+    b.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${Math.random()*100}%;
+      animation-duration:${Math.random()*12+8}s;
+      animation-delay:${Math.random()*10}s;
+    `;
+    container.appendChild(b);
+  }
+}
+
+createBubbles('introBubbles', 25);
+createBubbles('authBubbles', 20);
+
+// Spawn floating stars in intro
+(function spawnIntroStars() {
+  const container = document.getElementById('introBubbles');
+  if (!container) return;
+  const starChars = ['✦','✧','⋆','·','✴','★'];
+  for (let i = 0; i < 20; i++) {
+    const s = document.createElement('div');
+    s.className = 'intro-star';
+    s.textContent = starChars[Math.floor(Math.random() * starChars.length)];
+    s.style.cssText = `
+      left:${Math.random()*100}%;
+      bottom:${Math.random()*40}%;
+      font-size:${Math.random()*14+8}px;
+      animation-duration:${Math.random()*6+4}s;
+      animation-delay:${Math.random()*5}s;
+      opacity:0;
+    `;
+    container.appendChild(s);
+  }
+})();
+
+function createParticleBurst() {
+  const container = document.getElementById('introBubbles');
+  if (!container) return;
+  for (let i = 0; i < 8; i++) {
+    setTimeout(() => {
+      const p = document.createElement('div');
+      const size = Math.random() * 8 + 4;
+      p.style.cssText = `position:absolute;width:${size}px;height:${size}px;border-radius:50%;
+        background:rgba(133,183,235,0.9);left:${40+Math.random()*20}%;bottom:${40+Math.random()*20}%;
+        box-shadow:0 0 12px rgba(55,138,221,0.8);
+        animation:particlePop 1.2s ease forwards;pointer-events:none;`;
+      container.appendChild(p);
+      setTimeout(() => p.remove(), 1200);
+    }, i * 150);
+  }
+}
+
+// === GUARANTEED INTRO SEQUENCE ===
+async function runIntroSequence() {
+  return new Promise((resolve) => {
+    const intro = document.getElementById('luxuryIntro');
+    if (!intro) return resolve();
+    
+    // Ensure intro is visible and on top
+    intro.style.display = 'flex';
+    intro.style.zIndex = '99999';
+    
+    // Particle burst
+    createParticleBurst();
+    
+    // Wait 4 seconds, then fade out
+    setTimeout(() => {
+      intro.classList.add('fade-out');
+      setTimeout(() => {
+        intro.style.display = 'none';
+        introCompleted = true;
+        resolve();
+      }, 1200); // match fade-out animation duration
+    }, 4000);
+  });
+}
+
+// === WAIT FOR INTRO BEFORE PROCESSING AUTH ===
+let pendingAuthUser = null;
+
+fbAuth.onAuthStateChanged(async (user) => {
+  // Store the user, but don't process until intro finishes
+  pendingAuthUser = user;
+  
+  if (!introCompleted) {
+    await runIntroSequence();
+  }
+  
+  // Now handle the auth state
+  handleFirebaseUser(pendingAuthUser);
+});
+
+// ====== DARK MODE ======
+function toggleDark() {
+  isDark = !isDark;
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  document.querySelector('.dark-toggle').textContent = isDark ? '☀️' : '🌙';
+  setStorageItem('aidash_dark', isDark ? '1' : '0');
+}
+if (getStorageItem('aidash_dark') === '1') {
+  isDark = true;
+  document.documentElement.setAttribute('data-theme', 'dark');
+  document.addEventListener('DOMContentLoaded', () => {
+    const t = document.querySelector('.dark-toggle');
+    if (t) t.textContent = '☀️';
+  });
+}
+
+// ====== LANGUAGE ======
+function setLang(lang) {
+  currentLang = lang;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  const map = { en: 'langEN', zh: 'langZH', both: 'langBoth' };
+  document.getElementById(map[lang])?.classList.add('active');
+  updateHeroText();
+}
+function updateHeroText() {
+  const sub = document.getElementById('heroSub');
+  if (!sub) return;
+  if (currentLang === 'en') sub.textContent = '9 AI tools to supercharge your Chinese business';
+  else if (currentLang === 'zh') sub.textContent = '9个AI工具助力您的中国商业';
+  else sub.textContent = '9 AI tools to supercharge your Chinese business · 9个AI工具助力您的业务';
+}
+
+// ====== GREETING ======
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 12) return { text: 'Good morning', emoji: '🌅' };
+  if (h >= 12 && h < 17) return { text: 'Good afternoon', emoji: '☀️' };
+  if (h >= 17 && h < 21) return { text: 'Good evening', emoji: '🌆' };
+  return { text: 'Goodnight', emoji: '🌙' };
+}
+function updateGreeting() {
+  const g = getGreeting();
+  const el = document.getElementById('heroGreeting');
+  if (el) {
+    const displayName = currentUser?.username || currentUser?.name || 'User';
+    el.innerHTML = `${g.emoji} ${g.text}, <span id="heroName">${displayName}</span>!`;
+  }
+}
+
+// ====== SCROLL HELPERS ======
+function scrollToTop() { window.scrollTo({top:0,behavior:'smooth'}); }
+function scrollToTools() { document.getElementById('toolsAnchor')?.scrollIntoView({behavior:'smooth'}); }
+
+// ====== ABOUT MODAL ======
+function openAboutModal() { openModal('aboutModal'); }
+
+// ====== TOOLS CONFIG ======
+const TOOLS = {
+  sentiment: { icon:'💬', title:'Sentiment Analyzer', cn:'情感分析器',
+    desc:'Analyze Chinese customer reviews for positive, neutral, or negative sentiment using SnowNLP. · 使用SnowNLP分析中文客户评论的正面、中性或负面情感。',
+    panelContent:`<label>输入评论 Enter review</label><textarea id="sentimentText" rows="4" placeholder="输入中文评论..."></textarea><div class="panel-divider">— OR upload CSV/Excel 或上传CSV/Excel —</div><div class="csv-hint">Supported: CSV, XLSX, XLS (first column = review text)</div><input type="file" id="sentimentFile" accept=".csv,.xlsx,.xls"><button class="panel-submit" onclick="submitTool('sentiment','/api/sentiment')">分析 Analyze</button><div id="sentimentResult"></div><div id="sentimentStats" class="stats-result-grid" style="display:none"></div><div id="sentimentChart" style="display:none" class="chart-box"><canvas id="sCvs" height="200"></canvas></div>` },
+  keywords: { icon:'🔍', title:'Keyword Extractor', cn:'关键词提取器',
+    desc:'Uses TF‑IDF with category detection and e‑commerce stop words to extract meaningful phrases. · 使用TF‑IDF结合类别检测和电商停用词提取有意义的短语。',
+    panelContent:`<label>输入文本 Enter text</label><textarea id="keywordsText" rows="5" placeholder="输入中文文本..."></textarea><label>Keywords count 关键词数量</label><input type="number" id="keywordsN" value="10" min="1" max="30"><label>Category (optional) 类别（可选）</label><select id="keywordsCategory"><option value="">Auto‑detect 自动检测</option><option value="electronics">Electronics 电子</option><option value="fashion">Fashion 时尚</option><option value="food">Food 食品</option></select><div class="panel-divider">— OR upload CSV/Excel 或上传CSV/Excel —</div><div class="csv-hint">Supported: CSV, XLSX, XLS (first column = text)</div><input type="file" id="keywordsFile" accept=".csv,.xlsx,.xls"><button class="panel-submit" onclick="submitTool('keywords','/api/keywords')">提取 Extract</button><div id="keywordsResult"></div><div id="keywordsStats" class="stats-result-grid" style="display:none"></div><div id="keywordsChart" style="display:none" class="chart-box"><canvas id="kCvs" height="200"></canvas></div>` },
+  ocr: { icon:'📄', title:'OCR Scanner', cn:'文字识别扫描仪',
+    desc:'Uses Tesseract OCR to extract text from images — supports Chinese and English. · 使用Tesseract OCR从图像中提取文本，支持中英文。',
+    panelContent:`<label>上传图片 Upload image</label><input type="file" id="ocrFile" accept="image/*" required><div class="panel-divider">— OR upload multiple 或上传多个 —</div><div class="csv-hint">Upload multiple images for batch processing</div><input type="file" id="ocrFiles" accept="image/*" multiple><button class="panel-submit" onclick="submitTool('ocr','/api/ocr')">识别 Scan</button><div id="ocrResult"></div><div id="ocrStats" class="stats-result-grid" style="display:none"></div>` },
+  churn: { icon:'👥', title:'Churn Prediction', cn:'客户流失预测',
+    desc:'Decision Tree ML model predicts whether a customer is likely to churn based on activity data. · 决策树ML模型根据活动数据预测客户是否可能流失。',
+    panelContent:`<label>Months active 活跃月数</label><input type="number" id="churnMonths" value="6" min="1"><label>Total purchases 总购买次数</label><input type="number" id="churnPurchases" value="10" min="0"><label>Total spent ¥ 总消费额</label><input type="number" id="churnSpent" value="500" min="0"><label>Days since last purchase 上次购买天数</label><input type="number" id="churnDays" value="30" min="0"><div class="panel-divider">— OR upload CSV/Excel 或上传CSV/Excel —</div><div class="csv-hint">CSV columns: months_active, total_purchases, total_spent, days_since_last_purchase</div><input type="file" id="churnFile" accept=".csv,.xlsx,.xls"><button class="panel-submit" onclick="submitTool('churn','/api/churn')">预测 Predict</button><div id="churnResult"></div><div id="churnStats" class="stats-result-grid" style="display:none"></div><div id="churnChart" style="display:none" class="chart-box"><canvas id="cCvs" height="200"></canvas></div>` },
+  forecast: { icon:'📈', title:'Sales Forecast', cn:'销售预测',
+    desc:'Uses Facebook Prophet to forecast future sales trends over any time period. · 使用Facebook Prophet预测任意时间段内的未来销售趋势。',
+    panelContent:`<label>Forecast months 预测月份</label><input type="number" id="forecastMonths" value="3" min="1" max="24"><label>Upload your sales data 上传销售数据 <span style="color:#E24B4A">*Required</span></label><div class="csv-hint" style="margin-bottom:8px;">📋 Required columns: <b>date</b> (YYYY-MM-DD) and <b>sales_amount</b> — CSV or Excel (.xlsx/.xls)</div><input type="file" id="forecastFile" accept=".csv,.xlsx,.xls" required><button class="panel-submit" onclick="submitTool('forecast','/api/forecast')">预测 Forecast</button><div id="forecastResult"></div><div id="forecastStats" class="stats-result-grid" style="display:none"></div><div id="forecastChart" style="display:none" class="chart-box"><canvas id="fCvs" height="200"></canvas></div>` },
+  recommend: { icon:'🛒', title:'Recommendations', cn:'商品推荐系统',
+    desc:'Collaborative filtering recommends products based on similar user purchase patterns. · 协同过滤根据相似用户的购买模式推荐产品。',
+    panelContent:`<label>Upload your data 上传您的数据 <span style="color:#E24B4A">*Required</span></label><div class="csv-hint" style="margin-bottom:8px;">📋 Required columns: <b>user</b>, <b>product</b>, <b>rating</b> (1–5) — CSV or Excel (.xlsx/.xls)<br>After uploading, select a user from the dropdown to see their recommendations.</div><input type="file" id="recommendFile" accept=".csv,.xlsx,.xls" onchange="previewRecommendUsers(this)"><div id="recommendFileInfo" style="font-size:12px;color:#378ADD;margin-bottom:8px;display:none;"></div><div id="recommendUserSection" style="display:none"><label>Select user to get recommendations 选择用户 →</label><select id="recommendUser"></select></div><button class="panel-submit" onclick="submitRecommend()">推荐 Recommend</button><div id="recommendResult"></div><div id="recommendStats" class="stats-result-grid" style="display:none"></div><div id="recommendChart" style="display:none" class="chart-box"><canvas id="rCvs" height="200"></canvas></div>` },
+  fakereview: { icon:'🚨', title:'Fake Review Detector', cn:'虚假评论检测器',
+    desc:'Advanced detection using TF‑IDF, sentiment, 5 linguistic features, and duplicate filter. · 使用TF‑IDF、情感分析、5个语言学特征和重复过滤器的高级检测。',
+    panelContent:`<label>输入评论 Enter review</label><textarea id="fakereviewText" rows="3" placeholder="输入中文评论..."></textarea><div class="panel-divider">— OR upload CSV/Excel 或上传CSV/Excel —</div><div class="csv-hint">Supported: CSV, XLSX, XLS (first column = review text)</div><input type="file" id="fakereviewFile" accept=".csv,.xlsx,.xls"><button class="panel-submit" onclick="submitTool('fakereview','/api/fakereview')">检测 Detect</button><div id="fakereviewResult"></div><div id="fakereviewStats" class="stats-result-grid" style="display:none"></div><div id="fakereviewChart" style="display:none" class="chart-box"><canvas id="frCvs" height="200"></canvas></div>` },
+  imageclassifier: { icon:'🖼️', title:'Image Classifier', cn:'图像分类器',
+    desc:'MobileNetV2 (trained on 14M images) identifies products and returns top 5 confidence scores. · MobileNetV2（训练于1400万张图像）识别产品并返回前5置信度分数。',
+    panelContent:`<label>上传产品图片 Upload image</label><input type="file" id="imageclassifierFile" accept="image/*" required><div class="panel-divider">— OR upload multiple 或上传多个 —</div><div class="csv-hint">Upload multiple images for batch classification</div><input type="file" id="imageclassifierFiles" accept="image/*" multiple><button class="panel-submit" onclick="submitTool('imageclassifier','/api/imageclassifier')">识别 Classify</button><div id="imageclassifierResult"></div><div id="imageclassifierStats" class="stats-result-grid" style="display:none"></div><div id="imageclassifierChart" style="display:none" class="chart-box"><canvas id="iCvs" height="200"></canvas></div>` },
+  priceprediction: { icon:'💰', title:'Price Prediction', cn:'价格预测',
+    desc:'Random Forest ML predicts optimal price using category, rating, reviews, and brand tier. Supports single product or batch upload. · 随机森林ML根据类别、评分、评论数和品牌档次预测最优价格。支持单个产品或批量上传。',
+    panelContent:`
+      <div class="tabs" style="margin-bottom:16px;">
+        <button class="tab-btn active" onclick="switchPriceMode('single')">🔹 Single Product</button>
+        <button class="tab-btn" onclick="switchPriceMode('batch')">📁 Batch Upload</button>
+      </div>
+
+      <!-- SINGLE PRODUCT MODE -->
+      <div id="priceSingleMode">
+        <label>Product Category · 产品类别</label>
+        <input type="text" id="pricepredictionCategory" placeholder="e.g. phone, clothing, food, electronics...">
+        <div style="font-size:11px;color:var(--pale);margin:-4px 0 8px;">Any category works – unknown ones use global average</div>
+
+        <label>Rating (1–5) · 评分</label>
+        <input type="number" id="pricepredictionRating" min="1" max="5" step="0.1" value="4.2" placeholder="e.g. 4.5">
+
+        <label>Number of Reviews · 评论数量</label>
+        <input type="number" id="pricepredictionNumReviews" min="0" value="250" placeholder="e.g. 500">
+
+        <label>Brand Tier · 品牌档次</label>
+        <select id="pricepredictionBrandTier">
+          <option value="1">1 · Budget / Low End (低端)</option>
+          <option value="2" selected>2 · Mid‑Tier (中端)</option>
+          <option value="3">3 · Premium / High End (高端)</option>
+        </select>
+        <div style="font-size:11px;color:var(--pale);margin-top:-4px;">1 = budget, 2 = mid‑range, 3 = premium</div>
+      </div>
+
+      <!-- BATCH UPLOAD MODE (hidden by default) -->
+      <div id="priceBatchMode" style="display:none;">
+        <label>Upload Product Data (CSV or Excel) · 上传产品数据</label>
+        <div class="file-upload-area" onclick="document.getElementById('pricepredictionFile').click()">
+          <div class="upload-icon">📂</div>
+          <div class="upload-text">Click to select file · 点击选择文件</div>
+          <div class="upload-hint">CSV, XLSX, XLS · Max 16 MB</div>
+        </div>
+        <input type="file" id="pricepredictionFile" accept=".csv,.xlsx,.xls" style="display:none;" onchange="updatePriceFileName(this)">
+        <div id="priceFileInfo" style="font-size:12px;color:var(--sky);margin:8px 0;"></div>
+
+        <div class="csv-hint" style="background:var(--surface);padding:12px;border-radius:8px;margin:12px 0;">
+          <strong>📋 Required columns:</strong><br>
+          <code>category, rating, num_reviews, brand_tier</code><br><br>
+          <strong>Example row:</strong><br>
+          <code>phone, 4.5, 1200, 2</code><br><br>
+          <a href="#" onclick="downloadPriceTemplate();return false;" style="color:var(--sky);text-decoration:underline;">⬇️ Download sample CSV template</a>
+        </div>
+      </div>
+
+      <button class="panel-submit" onclick="submitPricePrediction()">💰 Predict Price · 预测价格</button>
+      <div id="pricepredictionResult"></div>
+      <div id="pricepredictionStats" class="stats-result-grid" style="display:none"></div>
+      <div id="pricepredictionChart" style="display:none" class="chart-box"><canvas id="ppCvs" height="200"></canvas></div>
+    ` }
+};
+
+const CHART_FNS = {
+  sentiment: (d,id) => new Chart(document.getElementById(id),{type:'bar',data:{labels:d.labels,datasets:[{label:'Sentiment %',data:d.values,backgroundColor:d.values.map(v=>v>60?'#10B981':v>40?'#F59E0B':'#E24B4A'),borderRadius:6}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:100}}}}),
+  keywords: (d,id) => new Chart(document.getElementById(id),{type:'bar',data:{labels:d.labels,datasets:[{label:'TF‑IDF Score',data:d.values,backgroundColor:'#378ADD',borderRadius:6}]},options:{indexAxis:'y',plugins:{legend:{display:false}}}}),
+  churn: (d,id) => new Chart(document.getElementById(id),{type:'doughnut',data:{labels:d.labels,datasets:[{data:d.values,backgroundColor:['#E24B4A','#10B981'],borderWidth:0}]},options:{plugins:{legend:{position:'bottom'}},cutout:'60%'}}),
+  forecast: (d,id) => new Chart(document.getElementById(id),{type:'line',data:{labels:d.labels,datasets:[{label:'Forecast',data:d.values,borderColor:'#378ADD',backgroundColor:'rgba(55,138,221,0.1)',fill:true,tension:0.4,pointRadius:4}]},options:{plugins:{legend:{display:false}}}}),
+  recommend: (d,id) => new Chart(document.getElementById(id),{type:'bar',data:{labels:d.labels,datasets:[{label:'Recommended',data:d.values,backgroundColor:'#378ADD',borderRadius:6}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:6}}}}),
+  fakereview: (d,id) => new Chart(document.getElementById(id),{type:'doughnut',data:{labels:['Fake 虚假','Genuine 真实'],datasets:[{data:[d.fake,d.genuine],backgroundColor:['#E24B4A','#10B981'],borderWidth:0}]},options:{plugins:{legend:{position:'bottom'}},cutout:'60%'}}),
+  imageclassifier: (d,id) => new Chart(document.getElementById(id),{type:'bar',data:{labels:d.labels,datasets:[{label:'Confidence %',data:d.values,backgroundColor:'#378ADD',borderRadius:6}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,max:100}}}}),
+  priceprediction: (d,id) => {
+    const palette = ['#378ADD','#10B981','#F59E0B','#E24B4A','#8B5CF6','#EC4899','#14B8A6','#F97316','#6366F1','#84CC16'];
+    return new Chart(document.getElementById(id),{
+      type:'bar',
+      data:{
+        labels:d.labels,
+        datasets:[{
+          label:'Avg Price ¥',
+          data:d.values,
+          backgroundColor: d.labels.map((_,i) => palette[i % palette.length]),
+          borderRadius:8,
+          borderWidth:0
+        }]
+      },
+      options:{
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`¥${c.raw.toLocaleString()}`}}},
+        scales:{y:{beginAtZero:true,ticks:{callback:v=>'¥'+v.toLocaleString()}}},
+        animation:{duration:800,easing:'easeOutQuart'}
+      }
+    });
+  }
+};
+
+let activeCharts = {};
+
+// ====== TOOL CARDS ======
+function renderToolCards(filter='') {
+  const grid = document.getElementById('toolsGrid');
+  grid.innerHTML = '';
+  let count = 0;
+  Object.entries(TOOLS).forEach(([key, t]) => {
+    const matchText = (t.title + t.cn + t.desc).toLowerCase();
+    if (filter && !matchText.includes(filter.toLowerCase())) return;
+    count++;
+    const card = document.createElement('div');
+    card.className = 'tool-card';
+    card.innerHTML = `
+      <div class="tool-card-icon">${t.icon}</div>
+      <div class="tool-card-title">${t.title}</div>
+      <div class="tool-card-cn">${t.cn}</div>
+      <div class="tool-card-desc">${t.desc.split('·')[0].trim()}</div>
+      <div class="tool-card-use">Click to use · 点击使用 →</div>`;
+    card.onclick = () => openTool(key);
+    grid.appendChild(card);
+  });
+  const countEl = document.getElementById('toolCount');
+  if (countEl) countEl.textContent = `${count} tools ready · ${count}个工具已就绪`;
+}
+
+function searchTools(q) { renderToolCards(q); }
+
+// ====== AUTH ======
+function switchAuthTab(tab) {
+  document.getElementById('loginForm').style.display = tab==='login'?'block':'none';
+  document.getElementById('signupForm').style.display = tab==='signup'?'block':'none';
+  document.querySelectorAll('.auth-tab').forEach((t,i) => t.classList.toggle('active', (i===0&&tab==='login')||(i===1&&tab==='signup')));
+  hideAuthError();
+}
+function showAuthError(msg) { const e=document.getElementById('authError'); e.textContent=msg; e.style.display='block'; }
+function hideAuthError() { document.getElementById('authError').style.display='none'; }
+
+async function handleFirebaseUser(fbUser) {
+  // Ensure intro is completely finished and hidden
+  const intro = document.getElementById('luxuryIntro');
+  if (intro) intro.style.display = 'none';
+
+  if (!fbUser) {
+    showAuth();
+    return;
+  }
+
+  try {
+    const idToken = await fbUser.getIdToken();
+    const res = await fetch('/api/auth/verify', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({idToken}) });
+    const data = await res.json();
+    if (!res.ok) { fbAuth.signOut(); showAuth(); showAuthError(data.error || 'Login failed'); return; }
+    currentUser = data;
+
+    setStorageItem('aidash_last_user', currentUser.email);
+
+    const lastUserEmail = getStorageItem('aidash_last_user');
+    const isSameUser = lastUserEmail === currentUser.email;
+
+    if (data.username && data.username.trim() !== '') {
+      currentUser.username = data.username;
+    } else {
+      currentUser.username = currentUser.name || currentUser.email.split('@')[0];
+    }
+
+    // Update DOM with current username immediately
+    const displayName = currentUser.username;
+    const g = getGreeting();
+    const heroEl = document.getElementById('heroGreeting');
+    if (heroEl) {
+      heroEl.innerHTML = `${g.emoji} ${g.text}, <span id="heroName">${displayName}</span>!`;
+    }
+
+    if (!currentUser.username || currentUser.username.trim() === '') {
+      showUsernameSetup();
+    } else {
+      if (isReturningUser && isSameUser) {
+        showApp();
+      } else {
+        showWelcomeAndApp();
+      }
+    }
+  } catch(e) {
+    console.warn('handleFirebaseUser error:', e);
+    try { fbAuth.signOut(); } catch(_) {}
+    showAuth();
+    if (e && e.code === 'auth/too-many-requests') {
+      showAuthError('Too many attempts. Please wait a moment and try again. · 请求过于频繁，请稍后再试。');
+    }
+  }
+}
+
+async function doEmailLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pw = document.getElementById('loginPassword').value;
+  if (!email||!pw) { showAuthError('Please fill in all fields. · 请填写所有字段。'); return; }
+  try { await fbAuth.signInWithEmailAndPassword(email, pw); }
+  catch(e) { showAuthError(e.message); }
+}
+
+async function doEmailSignup() {
+  const name = document.getElementById('signupName').value.trim();
+  const email = document.getElementById('signupEmail').value.trim();
+  const pw = document.getElementById('signupPassword').value;
+  if (!name||!email||!pw) { showAuthError('Please fill in all fields. · 请填写所有字段。'); return; }
+  try {
+    const cred = await fbAuth.createUserWithEmailAndPassword(email, pw);
+    await cred.user.updateProfile({displayName: name});
+  } catch(e) { showAuthError(e.message); }
+}
+
+async function doGoogleLogin() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  try { await fbAuth.signInWithPopup(provider); }
+  catch(e) { showAuthError(e.message); }
+}
+
+async function doLogout() {
+  await fetch('/api/auth/logout', {method:'POST'});
+  await fbAuth.signOut();
+  currentUser = null;
+  if (notifInterval) clearInterval(notifInterval);
+  removeStorageItem('aidash_last_user');
+  showAuth();
+}
+
+// ====== USERNAME SETUP ======
+function showUsernameSetup() {
+  document.getElementById('usernameSetupOverlay').classList.add('show');
+}
+
+async function saveNewUsername() {
+  const val = document.getElementById('usernameSetupInput').value.trim();
+  if (!val || val.length < 2) { showToast('Username must be at least 2 characters · 用户名至少2个字符', 'error'); return; }
+  try {
+    const res = await fetch('/api/user/username', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username: val}) });
+    if (res.ok) {
+      currentUser.username = val;
+      document.getElementById('usernameSetupOverlay').classList.remove('show');
+      showWelcomeAndApp();
+    } else {
+      showToast('Failed to save username · 保存用户名失败', 'error');
+    }
+  } catch(e) {
+    currentUser.username = val;
+    document.getElementById('usernameSetupOverlay').classList.remove('show');
+    showWelcomeAndApp();
+  }
+}
+
+// ====== CHANGE USERNAME ======
+function openChangeUsernameModal() {
+  document.getElementById('profileDropdown').classList.remove('show');
+  document.getElementById('newUsernameInput').value = currentUser?.username || '';
+  openModal('changeUsernameModal');
+}
+
+async function saveUsernameChange() {
+  const val = document.getElementById('newUsernameInput').value.trim();
+  if (!val || val.length < 2) { showToast('Username must be at least 2 characters · 用户名至少2个字符', 'error'); return; }
+  try {
+    const res = await fetch('/api/user/username', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username: val}) });
+    currentUser.username = val;
+    closeModal('changeUsernameModal');
+    updateGreeting();
+    document.getElementById('profileName').textContent = val;
+    document.getElementById('profileBtn').textContent = val[0].toUpperCase();
+    showToast('Username updated! · 用户名已更新！', 'success');
+  } catch(e) {
+    currentUser.username = val;
+    closeModal('changeUsernameModal');
+    updateGreeting();
+    document.getElementById('profileName').textContent = val;
+    document.getElementById('profileBtn').textContent = val[0].toUpperCase();
+    showToast('Username updated! · 用户名已更新！', 'success');
+  }
+}
+
+// ====== WELCOME ANIMATION ======
+function showWelcomeAndApp() {
+  const g = getGreeting();
+  const displayName = currentUser?.username || currentUser?.name || 'User';
+  const overlay = document.getElementById('welcomeOverlay');
+  safeText('welcomeEmoji', g.emoji);
+  safeText('welcomeText', `${g.text}, ${displayName}!`);
+  if (overlay) overlay.classList.add('show');
+
+  setTimeout(() => {
+    if (overlay) overlay.classList.remove('show');
+    setTimeout(() => showApp(), 500);
+  }, 2800);
+}
+
+// ====== NULL-SAFE CLASSLIST HELPERS ======
+function safeAdd(id, cls) { const el = document.getElementById(id); if (el) el.classList.add(cls); }
+function safeRemove(id, cls) { const el = document.getElementById(id); if (el) el.classList.remove(cls); }
+function safeText(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
+
+// ====== VIEW SWITCHING ======
+function showAuth() {
+  safeRemove('appLoading', 'active');
+  safeAdd('appLoading', 'hide');
+  safeAdd('authScreen', 'show');
+  safeRemove('appShell', 'show');
+  safeRemove('feedbackFab', 'show');
+}
+
+function showApp() {
+  safeRemove('authScreen', 'show');
+  safeAdd('appShell', 'show');
+
+  const displayName = currentUser?.username || currentUser?.name || 'User';
+  safeText('profileName', displayName);
+  safeText('profileEmail', currentUser?.email || '');
+  safeText('profileBtn', displayName[0]?.toUpperCase() || '👤');
+
+  updateGreeting();
+  updateHeroText();
+
+  if (currentUser?.is_admin) {
+    const vt = document.getElementById('viewToggle');
+    if (vt) vt.style.display = 'flex';
+    safeRemove('feedbackFab', 'show');
+  } else {
+    safeAdd('feedbackFab', 'show');
+  }
+
+  renderToolCards();
+  loadNotifications();
+  notifInterval = setInterval(loadNotifications, 30000);
+
+  fetch('/api/admin/stats').then(r=>r.json()).then(d => {
+    safeText('statUses', d.total_tool_uses || 0);
+  }).catch(()=>{});
+}
+
+function switchView(view) {
+  currentView = view;
+  document.getElementById('userView').style.display = view==='user' ? 'block' : 'none';
+  document.getElementById('adminView').classList.toggle('show', view==='admin');
+  document.getElementById('userViewBtn').classList.toggle('active', view==='user');
+  document.getElementById('adminViewBtn').classList.toggle('active', view==='admin');
+  document.getElementById('feedbackFab').classList.toggle('show', view==='user');
+  if (view==='admin') loadAdminData();
+}
+
+// ====== NOTIFICATIONS ======
+async function loadNotifications() {
+  try {
+    const res = await fetch('/api/notifications');
+    const data = await res.json();
+    const badge = document.getElementById('notifBadge');
+    const list = document.getElementById('notifList');
+    if (data.unread > 0) {
+      badge.textContent = data.unread > 9 ? '9+' : data.unread;
+      badge.classList.add('show');
+    } else { badge.classList.remove('show'); }
+    if (!data.notifications || data.notifications.length === 0) {
+      list.innerHTML = '<div class="notif-empty">No notifications yet · 暂无通知</div>';
+      return;
+    }
+    list.innerHTML = data.notifications.map(n => `
+      <div class="notif-item ${n.read===false?'unread':''}" onclick="markRead('${n.id}',this)">
+        <div class="notif-title">${n.is_announcement?'📢':''} ${n.title||'Notification'}</div>
+        <div class="notif-msg">${n.message||''}</div>
+        <div class="notif-time">${formatTime(n.time)}</div>
+      </div>`).join('');
+  } catch(e) {}
+}
+
+async function markRead(id, el) {
+  if (!id || id==='undefined') return;
+  el.classList.remove('unread');
+  await fetch(`/api/notifications/${id}/read`, {method:'POST'});
+  loadNotifications();
+}
+
+function markAllRead() { loadNotifications(); }
+function toggleNotif() {
+  document.getElementById('notifDropdown').classList.toggle('show');
+  document.getElementById('profileDropdown').classList.remove('show');
+}
+
+// ====== ADMIN DATA ======
+async function loadAdminData() {
+  loadAdminStats(); loadAdminUsers(); loadAdminActivity(); loadAdminToolUsage(); loadAdminFeedback();
+}
+
+async function loadAdminStats() {
+  try {
+    const res = await fetch('/api/admin/stats');
+    const d = await res.json();
+    document.getElementById('statUsers').textContent = d.total_users;
+    document.getElementById('statInactive').textContent = d.inactive_count;
+    document.getElementById('statToolUses').textContent = d.total_tool_uses;
+  } catch(e){}
+}
+
+async function loadAdminUsers() {
+  try {
+    const res = await fetch('/api/admin/users');
+    const d = await res.json();
+    allUsersCache = d.users || [];
+    renderUsersTable(allUsersCache);
+  } catch(e){}
+}
+
+function renderUsersTable(users) {
+  const tbody = document.getElementById('usersTableBody');
+  if (!users.length) { tbody.innerHTML='<tr><td colspan="3" style="text-align:center;color:#9CA3AF;padding:20px;">No users found</td></tr>'; return; }
+  tbody.innerHTML = users.map(u => `
+    <tr>
+      <td>
+        <div class="user-name-cell">
+          <div class="user-avatar-circle">${(u.name||'?')[0]}</div>
+          <div>
+            <div class="user-info-name">${u.name} ${u.is_admin?'<span class="badge badge-admin">Admin</span>':''}</div>
+            <div class="user-info-email">${u.email}</div>
+            <div style="font-size:10px;color:#9CA3AF;">${u.last_active}</div>
+          </div>
+        </div>
+      </td>
+      <td>${u.suspended?'<span class="badge badge-suspended">⚠️ Suspended</span>':u.inactive?'<span class="badge badge-inactive">😴 Inactive</span>':'<span class="badge badge-active">✅ Active</span>'}</td>
+      <td>
+        <div class="action-icons">
+          ${u.suspended
+            ?`<button class="action-icon-btn" onclick="unsuspendUser('${u.uid}')" title="Re-enable">🛡️</button>`
+            :`<button class="action-icon-btn danger" onclick="suspendUser('${u.uid}','${u.name}')" title="Suspend">⚡</button>`}
+          <button class="action-icon-btn" onclick="openRemindModal('${u.uid}','${u.name}')" title="Send reminder">📧</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function filterUsers(type, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if (type==='all') { renderUsersTable(allUsersCache); return; }
+  if (type==='inactive') renderUsersTable(allUsersCache.filter(u=>u.inactive&&!u.suspended));
+  if (type==='suspended') renderUsersTable(allUsersCache.filter(u=>u.suspended));
+}
+
+async function suspendUser(uid, name) {
+  if (!confirm(`Suspend "${name}"? They will not be able to log in.`)) return;
+  const res = await fetch(`/api/admin/users/${uid}/suspend`, {method:'POST'});
+  const d = await res.json();
+  showToast(d.message, 'success');
+  loadAdminUsers();
+}
+
+async function unsuspendUser(uid) {
+  const res = await fetch(`/api/admin/users/${uid}/unsuspend`, {method:'POST'});
+  const d = await res.json();
+  showToast(d.message, 'success');
+  loadAdminUsers();
+}
+
+function openRemindModal(uid, name) {
+  document.getElementById('remindUid').value = uid;
+  document.getElementById('remindTarget').textContent = name;
+  document.getElementById('remindMsg').value = '';
+  openModal('remindModal');
+}
+
+async function sendReminder() {
+  const uid = document.getElementById('remindUid').value;
+  const msg = document.getElementById('remindMsg').value.trim();
+  if (!msg) { showToast('Please enter a message', 'error'); return; }
+  const res = await fetch(`/api/admin/users/${uid}/remind`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})});
+  const d = await res.json();
+  closeModal('remindModal');
+  showToast(d.message, 'success');
+}
+
+async function loadAdminActivity() {
+  try {
+    const res = await fetch('/api/admin/activity');
+    const d = await res.json();
+    const list = document.getElementById('activityList');
+    if (!d.activities||!d.activities.length) { list.innerHTML='<div style="color:#9CA3AF;font-size:13px;text-align:center;padding:20px;">No activity yet · 暂无活动</div>'; return; }
+    list.innerHTML = d.activities.map(a=>`
+      <div class="activity-item">
+        <div class="activity-icon-box">${a.icon}</div>
+        <div>
+          <div class="activity-text">${a.text}</div>
+          ${a.user?`<div class="activity-user">${a.user}</div>`:''}
+          <div class="activity-time">${a.time}</div>
+        </div>
+      </div>`).join('');
+  } catch(e){}
+}
+
+async function loadAdminToolUsage() {
+  try {
+    const res = await fetch('/api/admin/tool-usage');
+    const d = await res.json();
+    const list = document.getElementById('toolUsageList');
+    list.innerHTML = d.tools.map(t=>`
+      <div class="tool-usage-item">
+        <div class="tool-usage-icon">${t.icon}</div>
+        <div class="tool-usage-info">
+          <div class="tool-usage-name">${t.name}</div>
+          <div class="tool-usage-bar-wrap"><div class="tool-usage-bar-fill" style="width:${t.percentage}%"></div></div>
+        </div>
+        <div class="tool-usage-count">${t.count} uses</div>
+      </div>`).join('');
+  } catch(e){}
+}
+
+async function loadAdminFeedback() {
+  try {
+    const res = await fetch('/api/admin/feedback');
+    const d = await res.json();
+    const list = document.getElementById('feedbackList');
+    if (!d.feedback||!d.feedback.length) { list.innerHTML='<div style="color:#9CA3AF;font-size:13px;text-align:center;padding:20px;">No feedback yet · 暂无反馈</div>'; return; }
+    list.innerHTML = d.feedback.map(f=>`
+      <div class="feedback-item">
+        <div class="feedback-header">
+          <div class="feedback-user">💬 ${f.name} · ${f.email}</div>
+          <div class="feedback-time">${f.time}</div>
+        </div>
+        <div class="feedback-msg">${f.message}</div>
+      </div>`).join('');
+  } catch(e){}
+}
+
+// ====== ANNOUNCEMENTS & FEEDBACK ======
+function openAnnounceModal() { openModal('announceModal'); }
+async function sendAnnouncement() {
+  const title = document.getElementById('announceTitle').value.trim();
+  const msg = document.getElementById('announceMsg').value.trim();
+  if (!msg) { showToast('Please enter a message · 请输入消息', 'error'); return; }
+  const res = await fetch('/api/admin/announce', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,message:msg})});
+  const d = await res.json();
+  closeModal('announceModal');
+  showToast(d.message||'Announcement sent! · 公告已发送！', 'success');
+}
+
+function openFeedbackModal() { openModal('feedbackModal'); }
+async function submitFeedback() {
+  const msg = document.getElementById('feedbackText').value.trim();
+  if (!msg) { showToast('Please enter a message · 请输入消息', 'error'); return; }
+  const res = await fetch('/api/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})});
+  if (res.ok) { closeModal('feedbackModal'); showToast('Feedback sent! Thank you. · 感谢您的反馈！', 'success'); document.getElementById('feedbackText').value=''; }
+}
+
+// ====== TOOLS ======
+function openTool(toolId) {
+  const tool = TOOLS[toolId];
+  const intro = document.getElementById('toolIntro');
+  document.getElementById('introIcon').textContent = tool.icon;
+  document.getElementById('introTitle').textContent = tool.title;
+  document.getElementById('introCn').textContent = tool.cn;
+  document.getElementById('introDesc').textContent = tool.desc.split('·')[0].trim();
+  const bar = document.getElementById('introBar');
+  bar.style.animation = 'none'; bar.offsetHeight;
+  bar.style.cssText = 'animation:fillBar 2.5s cubic-bezier(0.4,0,0.2,1) forwards;';
+  intro.classList.add('show');
+  setTimeout(() => { intro.classList.remove('show'); openPanel(toolId); }, 2800);
+}
+
+function openPanel(toolId) {
+  const tool = TOOLS[toolId];
+  document.getElementById('panelTitle').textContent = tool.icon + ' ' + tool.title;
+  document.getElementById('panelCn').textContent = tool.cn;
+  document.getElementById('panelBody').innerHTML = tool.panelContent;
+  document.getElementById('sidePanel').classList.add('open');
+  document.getElementById('panelOverlay').classList.add('show');
+}
+
+function closePanel() {
+  document.getElementById('sidePanel').classList.remove('open');
+  document.getElementById('panelOverlay').classList.remove('show');
+}
+
+function displayStats(toolId, stats) {
+  const statsEl = document.getElementById(toolId + 'Stats');
+  if (!statsEl || !stats) return;
+  
+  let html = '';
+  for (const [key, value] of Object.entries(stats)) {
+    html += `
+      <div class="stat-result-item">
+        <div class="stat-result-value">${value}</div>
+        <div class="stat-result-label">${key}</div>
+      </div>
+    `;
+  }
+  statsEl.innerHTML = html;
+  statsEl.style.display = 'grid';
+}
+
+// ====== RECOMMEND — CSV USER PREVIEW & SUBMIT ======
+async function previewRecommendUsers(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const infoEl = document.getElementById('recommendFileInfo');
+  const userSection = document.getElementById('recommendUserSection');
+  infoEl.style.display = 'block';
+  infoEl.style.color = '#378ADD';
+  infoEl.textContent = '⏳ Reading file...';
+
+  try {
+    const ext = file.name.split('.').pop().toLowerCase();
+    let users = [];
+
+    if (ext === 'csv') {
+      const text = await file.text();
+      const lines = text.trim().split('\n').slice(1);
+      users = [...new Set(lines.map(l => l.split(',')[0].trim().replace(/^"|"$/g,'')))].filter(Boolean);
+    } else {
+      infoEl.textContent = `✅ Excel file selected: ${file.name} — Upload and click Recommend to see users`;
+      infoEl.style.color = '#10B981';
+      userSection.style.display = 'block';
+      const select = document.getElementById('recommendUser');
+      select.innerHTML = `<option value="">-- Click Recommend to load users from file --</option>`;
+      return;
+    }
+
+    if (!users.length) {
+      infoEl.textContent = '⚠️ No users found. Check that column 1 is the user column.';
+      infoEl.style.color = '#E24B4A';
+      return;
+    }
+
+    userSection.style.display = 'block';
+    const select = document.getElementById('recommendUser');
+    select.innerHTML = users.map(u => `<option value="${u}">${u}</option>`).join('');
+    infoEl.textContent = `✅ ${users.length} user${users.length !== 1 ? 's' : ''} found: ${users.join(', ')}`;
+    infoEl.style.color = '#10B981';
+  } catch(e) {
+    infoEl.textContent = '⚠️ Could not read file. Make sure it is a valid CSV or Excel file.';
+    infoEl.style.color = '#E24B4A';
+  }
+}
+
+async function submitRecommend() {
+  const resultEl = document.getElementById('recommendResult');
+  const chartEl = document.getElementById('recommendChart');
+  resultEl.innerHTML = '<div class="result-box loading-text">⏳ Processing... · 处理中...</div>';
+
+  const formData = new FormData();
+  const user = document.getElementById('recommendUser')?.value || '';
+  const fileEl = document.getElementById('recommendFile');
+  if (fileEl?.files[0]) formData.append('file', fileEl.files[0]);
+  if (user) formData.append('user', user);
+
+  try {
+    const res = await fetch('/api/recommend', {method:'POST', body:formData});
+    const data = await res.json();
+    resultEl.innerHTML = `<div class="result-box">${data.result || data.error || 'Unknown error'}</div>`;
+
+    if (data.all_users && data.all_users.length) {
+      const select = document.getElementById('recommendUser');
+      const userSection = document.getElementById('recommendUserSection');
+      if (select) {
+        const current = select.value;
+        select.innerHTML = data.all_users.map(u => `<option value="${u}" ${u===current?'selected':''}>${u}</option>`).join('');
+        if (userSection) userSection.style.display = 'block';
+      }
+    }
+
+    if (data.chart) {
+      chartEl.style.display = 'block';
+      chartEl.innerHTML = `<canvas id="rCvs" height="200"></canvas>`;
+      if (activeCharts['recommend']) activeCharts['recommend'].destroy();
+      activeCharts['recommend'] = CHART_FNS['recommend'](data.chart, 'rCvs');
+    } else {
+      chartEl.style.display = 'none';
+    }
+  } catch(e) {
+    resultEl.innerHTML = `<div class="result-box" style="border-color:#E24B4A;">Error: ${e.message}</div>`;
+  }
+}
+
+async function submitTool(toolId, endpoint) {
+  const resultEl = document.getElementById(toolId+'Result');
+  const chartEl = document.getElementById(toolId+'Chart');
+  const statsEl = document.getElementById(toolId+'Stats');
+  if (!resultEl) return;
+  if (statsEl) statsEl.style.display = 'none';
+  resultEl.innerHTML = '<div class="result-box loading-text">⏳ Processing... · 处理中...</div>';
+
+  const formData = new FormData();
+  const inputs = {
+    sentiment:['review:text:sentimentText','file:file:sentimentFile'],
+    keywords:['text:text:keywordsText','n:number:keywordsN','category:select:keywordsCategory','file:file:keywordsFile'],
+    ocr:['image:file:ocrFile','images:files:ocrFiles'],
+    churn:['months:number:churnMonths','purchases:number:churnPurchases','spent:number:churnSpent','days:number:churnDays','file:file:churnFile'],
+    forecast:['months:number:forecastMonths','file:file:forecastFile'],
+    recommend:['user:select:recommendUser','file:file:recommendFile'],
+    fakereview:['review:text:fakereviewText','file:file:fakereviewFile'],
+    imageclassifier:['image:file:imageclassifierFile','images:files:imageclassifierFiles'],
+    priceprediction:['category:text:pricepredictionCategory','brand_tier:select:pricepredictionBrandTier','file:file:pricepredictionFile']
+  };
+
+  (inputs[toolId]||[]).forEach(spec => {
+    const [name,type,id] = spec.split(':');
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (type==='file') { if (el.files&&el.files[0]) formData.append(name, el.files[0]); }
+    else if (type==='files') { if (el.files) Array.from(el.files).forEach(f => formData.append(name, f)); }
+    else { if (el.value) formData.append(name, el.value); }
+  });
+
+  try {
+    const res = await fetch(endpoint, {method:'POST', body:formData});
+    const data = await res.json();
+    const msg = data.result || data.error || 'No result returned.';
+    resultEl.innerHTML = `<div class="result-box" ${data.error ? 'style="border-color:#E24B4A;"' : ''}>${msg}</div>`;
+    
+    if (data.stats) {
+      displayStats(toolId, data.stats);
+    }
+    
+    if (data.chart && !data.error) {
+      const canvasIds = { sentiment:'sCvs', keywords:'kCvs', churn:'cCvs', forecast:'fCvs', recommend:'rCvs', fakereview:'frCvs', imageclassifier:'iCvs', priceprediction:'ppCvs' };
+      const canvasId = canvasIds[toolId];
+      if (canvasId && chartEl && CHART_FNS[toolId]) {
+        chartEl.style.display = 'block';
+        chartEl.innerHTML = `<canvas id="${canvasId}" height="200"></canvas>`;
+        if (activeCharts[toolId]) activeCharts[toolId].destroy();
+        activeCharts[toolId] = CHART_FNS[toolId](data.chart, canvasId);
+      }
+    } else if (chartEl) {
+      chartEl.style.display = 'none';
+    }
+  } catch(e) {
+    resultEl.innerHTML = `<div class="result-box" style="border-color:#E24B4A;">❌ Error: ${e.message}</div>`;
+  }
+}
+
+// ====== PRICE PREDICTION MODE SWITCH ======
+function switchPriceMode(mode) {
+  const singleDiv = document.getElementById('priceSingleMode');
+  const batchDiv = document.getElementById('priceBatchMode');
+  const tabs = document.querySelectorAll('#sidePanel .tab-btn');
+  
+  tabs.forEach(btn => btn.classList.remove('active'));
+  if (mode === 'single') {
+    singleDiv.style.display = 'block';
+    batchDiv.style.display = 'none';
+    tabs[0].classList.add('active');
+  } else {
+    singleDiv.style.display = 'none';
+    batchDiv.style.display = 'block';
+    tabs[1].classList.add('active');
+  }
+}
+
+function updatePriceFileName(input) {
+  const info = document.getElementById('priceFileInfo');
+  if (input.files.length > 0) {
+    info.textContent = `✅ Selected: ${input.files[0].name}`;
+  } else {
+    info.textContent = '';
+  }
+}
+
+function downloadPriceTemplate() {
+  const csvContent = "category,rating,num_reviews,brand_tier\nphone,4.5,1200,2\nclothing,4.2,450,1\nfood,4.8,3200,3\nelectronics,4.6,890,2\n";
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+  link.setAttribute("href", url);
+  link.setAttribute("download", "price_prediction_template.csv");
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+// ====== CUSTOM SUBMIT FOR PRICE PREDICTION ======
+async function submitPricePrediction() {
+  const resultEl = document.getElementById('pricepredictionResult');
+  const chartEl = document.getElementById('pricepredictionChart');
+  const statsEl = document.getElementById('pricepredictionStats');
+  
+  resultEl.innerHTML = '<div class="result-box loading-text">⏳ Processing... · 处理中...</div>';
+  if (statsEl) statsEl.style.display = 'none';
+  if (chartEl) chartEl.style.display = 'none';
+
+  const formData = new FormData();
+  
+  // Check which mode is active
+  const singleMode = document.getElementById('priceSingleMode').style.display !== 'none';
+  
+  if (singleMode) {
+    // Single product mode
+    const category = document.getElementById('pricepredictionCategory').value.trim();
+    const rating = document.getElementById('pricepredictionRating').value;
+    const numReviews = document.getElementById('pricepredictionNumReviews').value;
+    const brandTier = document.getElementById('pricepredictionBrandTier').value;
+    
+    if (!category || !rating || !numReviews || !brandTier) {
+      resultEl.innerHTML = '<div class="result-box" style="border-color:#E24B4A;">❌ Please fill in all fields.</div>';
+      return;
+    }
+    
+    formData.append('category', category);
+    formData.append('rating', rating);
+    formData.append('num_reviews', numReviews);
+    formData.append('brand_tier', brandTier);
+  } else {
+    // Batch mode
+    const fileInput = document.getElementById('pricepredictionFile');
+    if (!fileInput.files.length) {
+      resultEl.innerHTML = '<div class="result-box" style="border-color:#E24B4A;">❌ Please select a file to upload.</div>';
+      return;
+    }
+    formData.append('file', fileInput.files[0]);
+  }
+
+  try {
+    const res = await fetch('/api/priceprediction', { method: 'POST', body: formData });
+    const data = await res.json();
+    
+    if (data.error) {
+      resultEl.innerHTML = `<div class="result-box" style="border-color:#E24B4A;white-space:pre-wrap;">❌ ${data.error}</div>`;
+      return;
+    }
+    
+    resultEl.innerHTML = `<div class="result-box">${data.result}</div>`;
+    
+    if (data.stats) {
+      statsEl.style.display = 'grid';
+      let html = '';
+      for (const [key, value] of Object.entries(data.stats)) {
+        html += `<div class="stat-result-item"><div class="stat-result-value">${value}</div><div class="stat-result-label">${key}</div></div>`;
+      }
+      statsEl.innerHTML = html;
+    }
+    
+    if (data.chart) {
+      chartEl.style.display = 'block';
+      chartEl.innerHTML = `<canvas id="ppCvs" height="200"></canvas>`;
+      if (activeCharts['priceprediction']) activeCharts['priceprediction'].destroy();
+      activeCharts['priceprediction'] = CHART_FNS['priceprediction'](data.chart, 'ppCvs');
+    }
+  } catch(e) {
+    resultEl.innerHTML = `<div class="result-box" style="border-color:#E24B4A;">❌ Error: ${e.message}</div>`;
+  }
+}
+
+// ====== MODALS ======
+function openModal(id) { const el = document.getElementById(id); if (el) el.classList.add('show'); }
+function closeModal(id) { const el = document.getElementById(id); if (el) el.classList.remove('show'); }
+
+// ====== PROFILE ======
+function toggleProfile() {
+  const pd = document.getElementById('profileDropdown');
+  if (pd) pd.classList.toggle('show');
+  safeRemove('notifDropdown', 'show');
+}
+
+// ====== TOAST ======
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  if (!t) return;
+  t.textContent = msg; t.className = 'toast show ' + type;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ====== UTILS ======
+function formatTime(t) {
+  if (!t) return '';
+  if (typeof t === 'object' && t._seconds) return new Date(t._seconds*1000).toLocaleString();
+  return String(t);
+}
+
+// Close on outside click
+document.addEventListener('click', e => {
+  if (!e.target.closest('.notif-wrap')) safeRemove('notifDropdown', 'show');
+  if (!e.target.closest('.profile-wrap')) safeRemove('profileDropdown', 'show');
+});
+document.querySelectorAll('.modal-overlay').forEach(el => el.addEventListener('click', e => { if (e.target===el) el.classList.remove('show'); }));
+
+</script>
+</body>
+</html>

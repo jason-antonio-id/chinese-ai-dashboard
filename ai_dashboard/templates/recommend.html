@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recommendations — AI Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        body { margin:0; font-family:'Segoe UI',sans-serif; background:white; }
+        .navbar { background:#042C53; padding:0.875rem 2rem; display:flex; align-items:center; justify-content:space-between; }
+        .navbar-logo { color:white; font-size:15px; font-weight:600; }
+        .navbar-logo span { color:#85B7EB; font-size:11px; display:block; }
+        .nav-link { color:#85B7EB; font-size:12px; padding:5px 14px; border-radius:20px; border:0.5px solid #185FA5; text-decoration:none; }
+        .nav-link:hover { background:#185FA5; color:white; }
+        .tool-page { max-width:750px; margin:2rem auto; padding:0 1rem; }
+        .tool-title { font-size:20px; font-weight:600; color:#042C53; margin-bottom:4px; }
+        .tool-cn { font-size:13px; color:#378ADD; margin-bottom:1.5rem; }
+        .tool-card { background:#F0F5FB; border-radius:12px; padding:1.5rem; border-left:3px solid #378ADD; margin-bottom:1rem; }
+        label { font-size:12px; color:#378ADD; display:block; margin-bottom:4px; margin-top:10px; }
+        select { width:100%; padding:10px 14px; border:0.5px solid #B5D4F4; border-radius:8px; font-size:14px; margin-bottom:10px; background:white; color:#042C53; outline:none; box-sizing:border-box; }
+        input[type="file"] { width:100%; padding:10px; border:0.5px dashed #378ADD; border-radius:8px; font-size:13px; margin-bottom:10px; background:white; color:#042C53; box-sizing:border-box; }
+        button[type="submit"] { background:#042C53; color:white; border:none; padding:10px 24px; border-radius:8px; font-size:14px; cursor:pointer; width:100%; }
+        button[type="submit"]:hover { background:#185FA5; }
+        .result { margin-top:1rem; padding:1rem; background:white; border-radius:8px; border-left:3px solid #378ADD; font-size:13px; color:#042C53; white-space:pre-wrap; }
+        .back-link { display:inline-block; margin-bottom:1rem; color:#378ADD; font-size:13px; text-decoration:none; }
+        .divider { text-align:center; color:#85B7EB; font-size:12px; margin:10px 0; }
+        .chart-box { background:white; border-radius:12px; padding:1rem; margin-top:1rem; border:0.5px solid #B5D4F4; }
+        .csv-hint { font-size:11px; color:#85B7EB; margin-bottom:8px; }
+    </style>
+</head>
+<body>
+<div class="navbar">
+    <div class="navbar-logo">AI Dashboard <span>人工智能工具平台</span></div>
+    <div style="display:flex;gap:8px;">
+        <a href="/" class="nav-link">总览 Home</a>
+        <a href="/logout" class="nav-link">登出 Logout</a>
+    </div>
+</div>
+<div class="tool-page">
+    <a href="/" class="back-link">← 返回 Back</a>
+    <div class="tool-title">🛒 Recommendations</div>
+    <div class="tool-cn">商品推荐系统 — Get product recommendations</div>
+    <div class="tool-card">
+        <form method="POST" action="/recommend" enctype="multipart/form-data">
+            <label>选择用户 Select user (demo data)</label>
+            <select name="user">
+                <option value="Alice">Alice</option>
+                <option value="Bob">Bob</option>
+                <option value="Charlie">Charlie</option>
+                <option value="David">David</option>
+            </select>
+            <div class="divider">— OR upload your own data 或上传您的数据 —</div>
+            <div class="csv-hint">CSV columns required: user, product, rating (1-5)</div>
+            <input type="file" name="file" accept=".csv">
+            <button type="submit">推荐 Recommend</button>
+        </form>
+        {% if result %}
+        <div class="result">{{ result }}</div>
+        {% endif %}
+        {% if chart_data %}
+        <div class="chart-box">
+            <canvas id="recommendChart" height="200"></canvas>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% if chart_data %}
+<script>
+const data = {{ chart_data|safe }};
+new Chart(document.getElementById('recommendChart'), {
+    type: 'bar',
+    data: {
+        labels: data.labels,
+        datasets: [{
+            label: 'Recommended Products 推荐商品',
+            data: data.values,
+            backgroundColor: '#378ADD',
+            borderRadius: 6
+        }]
+    },
+    options: {
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, max: 6 } }
+    }
+});
+</script>
+{% endif %}
+</body>
+</html>

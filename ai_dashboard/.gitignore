@@ -1,0 +1,68 @@
+# ========================================
+# SECRETS — NEVER commit these to GitHub
+# ========================================
+serviceAccountKey.json
+.env
+*.env
+.env.local
+.env.production
+
+# ========================================
+# Python
+# ========================================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+
+# Virtual environments
+venv/
+env/
+.venv/
+ENV/
+
+# ========================================
+# Flask / App Runtime
+# ========================================
+uploads/
+instance/
+.webassets-cache
+flask_session/
+
+# ========================================
+# ML / Data files
+# ========================================
+*.h5
+*.pkl
+*.model
+synthetic_products_*.csv   # Ignore auto‑generated training CSV
+uploads/*.csv              # Ignore user‑uploaded CSV files
+
+# ========================================
+# OS / Editor
+# ========================================
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ========================================
+# Logs
+# ========================================
+*.log
+logs/
