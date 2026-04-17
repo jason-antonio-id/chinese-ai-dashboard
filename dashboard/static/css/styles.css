@@ -1,0 +1,179 @@
+/* 3D Minimalistic Blue/White Glassmorphism Theme */
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --neon-blue: #3b82f6;
+  --neon-glow: 0 0 20px rgba(59, 130, 246, 0.5);
+  --dark-bg: #0f172a;
+  --gradient-bg: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  background: var(--gradient-bg);
+  font-family: 'Inter Var', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: white;
+}
+
+.panel {
+  backdrop-filter: blur(20px);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.panel:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-12px) scale(1.05) rotateX(5deg) rotateY(5deg);
+  box-shadow: 
+    0 40px 80px -12px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    var(--neon-glow);
+}
+
+.btn-3d {
+  background: linear-gradient(135deg, var(--neon-blue) 0%, #1d4ed8 100%);
+  border: none;
+  border-radius: 16px;
+  padding: 1rem 2rem;
+  font-weight: 600;
+  color: white;
+  box-shadow: 
+    0 10px 25px rgba(59, 130, 246, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.btn-3d:hover {
+  transform: translateY(-3px);
+  box-shadow: 
+    0 20px 40px rgba(59, 130, 246, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.btn-3d:active {
+  transform: translateY(-1px);
+}
+
+.tool-overlay {
+  background: rgba(15, 23, 42, 0.98);
+  backdrop-filter: blur(40px);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 32px;
+  box-shadow: 
+    0 50px 100px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.glass-card:hover {
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25), var(--neon-glow);
+}
+
+.neon-glow {
+  box-shadow: var(--neon-glow);
+  animation: pulse-glow 2s infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: var(--neon-glow); }
+  50% { box-shadow: 0 0 40px rgba(59, 130, 246, 0.8); }
+}
+
+.table-3d th {
+  background: linear-gradient(135deg, #1e40af, #1e3a8a);
+  color: white;
+  font-weight: 600;
+  backdrop-filter: blur(10px);
+}
+
+.table-3d tbody tr:hover {
+  background: rgba(59, 130, 246, 0.1);
+  transform: scale(1.01);
+}
+
+.result-positive { background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(74, 222, 128, 0.1) 100%); }
+.result-negative { background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(248, 113, 113, 0.1) 100%); }
+.result-neutral { background: linear-gradient(135deg, rgba(251, 191, 36, 0.2) 0%, rgba(254, 240, 138, 0.1) 100%); }
+
+.input-field {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  padding: 1rem;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: var(--neon-blue);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.chart-container {
+  background: var(--glass-bg);
+  border-radius: 20px;
+  padding: 2rem;
+  backdrop-filter: blur(20px);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .panel {
+    width: 90vw !important;
+    margin: 1rem;
+  }
+  
+  .tool-overlay {
+    margin: 2rem;
+    max-height: 90vh;
+  }
+}
+
+/* Orbit animation */
+.orbit-spin {
+  animation: orbit 20s linear infinite;
+}
+
+@keyframes orbit {
+  from { transform: rotateZ(0deg) translateX(200px) rotateZ(0deg); }
+  to { transform: rotateZ(360deg) translateX(200px) rotateZ(-360deg); }
+}
+
+/* Floating animation for metrics */
+.metric-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+

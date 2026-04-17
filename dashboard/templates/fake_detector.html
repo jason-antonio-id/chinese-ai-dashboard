@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Fake Review Detector - AI Dashboard{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+  <div class="text-center mb-12">
+    <h1 class="text-4xl lg:text-5xl font-black bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent mb-4">
+      <i class="fas fa-shield-alt"></i> Fake Review Detector
+    </h1>
+    <p class="text-xl text-blue-100">90%+ accuracy | CSV upload or text paste | Taobao/Shopee ready</p>
+  </div>
+
+  <div class="card-3d mb-12 p-10">
+    {% if error %}
+      <div class="bg-red-500/20 border border-red-500/50 text-red-200 p-6 rounded-2xl mb-6">
+        <i class="fas fa-exclamation-triangle mr-3"></i>{{ error }}
+      </div>
+    {% endif %}
+    
+    <form method="post" enctype="multipart/form-data" class="space-y-6">
+      <div class="grid md:grid-cols-2 gap-6">
+        <div>
+          <label class="block text-lg font-semibold mb-4 text-white">📁 Upload CSV (review column)</label>
+          <div class="border-2 border-dashed border-white/30 rounded-3xl p-8 text-center hover:border-blue-400 transition-all bg-white/5">
+            <i class="fas fa-cloud-upload-alt text-4xl text-blue-400 mb-4"></i>
+            <input type="file" name="csv_file" accept=".csv" class="hidden" onchange="this.parentElement.classList.add('border-blue-400', 'bg-blue-500/10')">
+            <p class="text-blue-200 mb-2">reviews.csv</p>
+            <p class="text-sm text-gray-400">Drag or click to upload</p>
+          </div>
+        </div>
+        <div>
+          <label class="block text-lg font-semibold mb-4 text-white">📝 Or paste reviews (one per line)</label>
+          <textarea name="reviews_text" rows="8" 
+                    class="w-full p-6 bg-white/10 backdrop-blur border border-white/30 rounded-2xl focus:outline-none focus:border-blue-400 focus:ring-4 ring-blue-500/20 transition-all text-lg resize-vertical"
+                    placeholder="每行一条评论&#10;例：很好！推荐！&#10;手机电池续航两天..."></textarea>
+        </div>
+      </div>
+      <button type="submit" class="btn-3d w-full text-xl py-8">
+        <i class="fas fa-magic mr-3"></i>🔍 Detect Fake Reviews
+      </button>
+    </form>
+  </div>
+
+  {% if results %}
+    <!-- Summary Card -->
+    <div class="card-3d mb-8 p-8">
+      <h3 class="text-2xl font-bold mb-6 text-white flex items-center">
+        <i class="fas fa-chart-bar mr-3 text-blue-400"></i> Analysis Results
+      </h3>
+      <div class="grid md:grid-cols-3 gap-6 text-center">
+        <div class="bg-gradient-to-br from-blue-500/20 to-indigo-500/20 p-6 rounded-2xl">
+          <div class="text-3xl font-bold text-blue-400">{{ summary_count }}</div>
+          <div class="text-blue-200">Total Reviews</div>
+        </div>
+        <div class="bg-gradient-to-br from-red-500/20 to-orange-500/20 p-6 rounded-2xl">
+          <div class="text-3xl font-bold text-red-400">{{ fake_count }}</div>
+          <div class="text-red-200">Fake Detected</div>
+        </div>
+        <div class="bg-gradient-to-br from-green-500/20 p-6 rounded-2xl">
+          <div class="text-3xl font-bold text-green-400">{{ accuracy }}</div>
+          <div class="text-green-200">Accuracy (if labeled)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Table -->
+    <div class="card-3d overflow-hidden">
+      <div class="table-responsive">
+        {{ table|safe }}
+      </div>
+      <div class="text-center mt-8">
+        {% if download_btn %}
+          {{ download_btn|safe }}
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<script>
+  // File upload styling
+  document.querySelector('input[type=file]').addEventListener('change', function() {
+    const label = this.parentElement;
+    if (this.files.length > 0) {
+      label.innerHTML = `<i class="fas fa-check-circle text-4xl text-green-400 mb-4"></i>
+                        <p class="text-green-200 mb-2">${this.files[0].name}</p>
+                        <p class="text-sm text-gray-400">File selected</p>`;
+    }
+  });
+</script>
+{% endblock %}
+

@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Order Message Cleaner - AI Dashboard{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <div class="text-center mb-12">
+    <h1 class="text-4xl lg:text-5xl font-black bg-gradient-to-r from-teal-400 to-emerald-400 bg-clip-text text-transparent mb-4">
+      <i class="fas fa-file-invoice-dollar"></i> Order Message Cleaner
+    </h1>
+    <p class="text-xl text-blue-100">Extract & validate RMB amount, date, phone from Chinese message</p>
+  </div>
+
+  <div class="card-3d p-8 mb-8">
+    <form method="POST" class="space-y-6">
+      <div>
+        <label class="block text-lg font-semibold mb-4 text-white">Order Message:</label>
+        <textarea name="message" required rows="4" 
+                  class="w-full p-6 bg-white/10 backdrop-blur border border-white/30 rounded-2xl focus:outline-none focus:border-teal-400 focus:ring-4 ring-teal-500/20 transition-all text-lg resize-vertical"
+                  placeholder="订单金额5000元，日期2024年1月15日，电话13912345678&#10;订单金额1.5万元，日期2024.01.16，电话139 8765 4321"></textarea>
+      </div>
+      <button type="submit" class="btn-3d w-full text-xl py-6">
+        <i class="fas fa-magic mr-3"></i> Parse & Validate Order
+      </button>
+    </form>
+  </div>
+
+  {% if result %}
+    <div class="card-3d p-8">
+      <h3 class="text-2xl font-bold mb-6 text-white flex items-center">
+        <i class="fas fa-list mr-3 text-teal-400"></i> Parsed Results
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div class="result-card p-6">
+          <div class="text-3xl font-bold mb-3 text-teal-600">{{ result.amount }} RMB</div>
+          <div class="text-lg mb-1">Amount: {{ '✅ Valid' if result.amount > 0 else '❌ Invalid' }}</div>
+        </div>
+        <div class="result-card p-6">
+          <div class="text-3xl font-bold mb-3 text-blue-600">{{ result.date }}</div>
+          <div class="text-lg">Date: {{ '✅ Valid' if result.date != 'no date' else '❌ Invalid' }}</div>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="result-card p-6">
+          <div class="text-xl font-bold mb-2">{{ result.phone }}</div>
+          <div class="text-lg">Phone: {{ '✅ Valid' if result.phone else '❌ Invalid' }}</div>
+        </div>
+        <div class="result-card p-6 text-center">
+          <div class="text-4xl font-bold {% if result.is_valid %}text-green-600{% else %}text-red-600{% endif %} mb-2">
+            {{ '✅ COMPLETE' if result.is_valid else '⚠️  INCOMPLETE' }}
+          </div>
+          <div class="text-xl font-bold">Overall Status</div>
+        </div>
+      </div>
+      <div class="mt-8 p-6 bg-gradient-to-r from-teal-500/20 to-emerald-500/20 rounded-2xl">
+        <div class="text-sm text-teal-200">Original Message: {{ message }}</div>
+      </div>
+      <a href="/rmb-order-cleaner" class="btn-3d mt-8 block mx-auto w-fit">
+        <i class="fas fa-redo mr-2"></i> Parse Another Order
+      </a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+

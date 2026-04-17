@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Churn Predictor - AI Dashboard{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <div class="text-center mb-12">
+    <h1 class="text-4xl lg:text-5xl font-black bg-gradient-to-r from-orange-400 to-yellow-400 bg-clip-text text-transparent mb-4">
+      <i class="fas fa-user-times"></i> Churn Predictor
+    </h1>
+    <p class="text-xl text-blue-100">Predict customer churn risk with Decision Tree ML</p>
+  </div>
+
+  <div class="card-3d mb-8 p-8">
+    {% if prediction %}
+      <div class="result-card text-gray-900 text-center">
+        <div class="text-6xl mb-6">
+          {% if prediction == 1 %}
+            <i class="fas fa-exclamation-triangle text-red-500"></i>
+            <div class="text-2xl font-bold text-red-600 mt-4">LIKELY TO CHURN 🚨</div>
+          {% else %}
+            <i class="fas fa-check-circle text-green-500"></i>
+            <div class="text-2xl font-bold text-green-600 mt-4">LIKELY TO STAY ✅</div>
+          {% endif %}
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 p-6 bg-gray-100 rounded-2xl">
+          <div>
+            <div class="text-sm text-gray-600">Months Active</div>
+            <div class="text-2xl font-bold">{{ months_active }}</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-600">Total Purchases</div>
+            <div class="text-2xl font-bold">{{ total_purchases }}</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-600">Total Spent</div>
+            <div class="text-2xl font-bold">${{ total_spent }}</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-600">Days Since Last</div>
+            <div class="text-2xl font-bold">{{ days_since_last }}</div>
+          </div>
+        </div>
+        <a href="/churn" class="btn-3d">
+          <i class="fas fa-redo mr-2"></i> Predict Another Customer
+        </a>
+      </div>
+    {% else %}
+      <form method="POST" class="space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-lg font-semibold mb-3 text-white">Months Active</label>
+            <input type="number" name="months_active" required min="0" class="form-input w-full p-4 bg-white/20 border border-white/30 rounded-xl focus:ring-4 ring-blue-500/20">
+          </div>
+          <div>
+            <label class="block text-lg font-semibold mb-3 text-white">Total Purchases</label>
+            <input type="number" name="total_purchases" required min="0" class="form-input w-full p-4 bg-white/20 border border-white/30 rounded-xl focus:ring-4 ring-blue-500/20">
+          </div>
+          <div>
+            <label class="block text-lg font-semibold mb-3 text-white">Total Spent ($)</label>
+            <input type="number" name="total_spent" required min="0" class="form-input w-full p-4 bg-white/20 border border-white/30 rounded-xl focus:ring-4 ring-blue-500/20">
+          </div>
+          <div>
+            <label class="block text-lg font-semibold mb-3 text-white">Days Since Last Purchase</label>
+            <input type="number" name="days_since_last_purchase" required min="0" class="form-input w-full p-4 bg-white/20 border border-white/30 rounded-xl focus:ring-4 ring-blue-500/20">
+          </div>
+        </div>
+        <button type="submit" class="btn-3d w-full text-xl py-6">
+          <i class="fas fa-brain mr-3"></i> Predict Churn Risk
+        </button>
+      </form>
+    {% endif %}
+  </div>
+
+  <!-- Sample Data Load -->
+  <div class="card-3d p-6">
+    <h3 class="text-xl font-bold mb-4 text-white">Demo with sample data:</h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+      <button form="demo1" type="submit" class="btn-3d py-3 px-4 text-sm">Low Risk<br><small>36m, 100p, $10k</small></button>
+      <button form="demo2" type="submit" class="btn-3d py-3 px-4 text-sm">High Risk<br><small>6m, 2p, $100</small></button>
+      <button form="demo3" type="submit" class="btn-3d py-3 px-4 text-sm">Medium<br><small>24m, 50p, $3k</small></button>
+    </div>
+  </div>
+  
+  <form id="demo1" method="POST" style="display: none;">
+    <input type="hidden" name="months_active" value="36">
+    <input type="hidden" name="total_purchases" value="100">
+    <input type="hidden" name="total_spent" value="10000">
+    <input type="hidden" name="days_since_last_purchase" value="1">
+  </form>
+  <form id="demo2" method="POST" style="display: none;">
+    <input type="hidden" name="months_active" value="6">
+    <input type="hidden" name="total_purchases" value="2">
+    <input type="hidden" name="total_spent" value="100">
+    <input type="hidden" name="days_since_last_purchase" value="90">
+  </form>
+  <form id="demo3" method="POST" style="display: none;">
+    <input type="hidden" name="months_active" value="24">
+    <input type="hidden" name="total_purchases" value="50">
+    <input type="hidden" name="total_spent" value="3000">
+    <input type="hidden" name="days_since_last_purchase" value="5">
+  </form>
+</div>
+{% endblock %}
+

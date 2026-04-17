@@ -1,0 +1,7 @@
+months_active,total_purchases,total_spent,days_since_last_purchase,churned
+12,5,500,30,0
+24,50,3000,5,1
+6,2,100,90,1
+36,100,10000,1,0
+18,20,1500,20,0
+

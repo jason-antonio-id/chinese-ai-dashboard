@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Sentiment Analyzer - AI Dashboard{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <div class="text-center mb-12">
+    <h1 class="text-4xl lg:text-5xl font-black bg-gradient-to-r from-pink-400 to-rose-400 bg-clip-text text-transparent mb-4">
+      <i class="fas fa-heart"></i> Sentiment Analyzer
+    </h1>
+    <p class="text-xl text-blue-100">Analyze Chinese reviews instantly with SnowNLP</p>
+  </div>
+
+  <div class="card-3d mb-8 p-8">
+    {% if result %}
+      <div class="result-card text-gray-900 mb-8 p-8 text-center">
+        <div class="emoji text-6xl mb-6">{{ emoji }}</div>
+        <h2 class="text-3xl font-bold mb-4">{{ label }}</h2>
+        <div class="score text-5xl font-black text-blue-600 mb-6">{{ score }}</div>
+        <p class="text-lg opacity-90"><strong>Review:</strong><br>{{ review }}</p>
+        <a href="/sentiment" class="btn-3d mt-6 inline-block">
+          <i class="fas fa-redo mr-2"></i> Analyze Another
+        </a>
+      </div>
+    {% else %}
+      <form method="POST" class="space-y-6">
+        <div>
+          <label class="block text-lg font-semibold mb-4 text-white">Enter Chinese review:</label>
+          <input type="text" name="review" required 
+                 class="w-full p-6 text-xl bg-white/20 backdrop-blur border border-white/30 rounded-2xl focus:outline-none focus:border-blue-400 focus:ring-4 ring-blue-500/20 transition-all" 
+                 placeholder="e.g. 这个手机电池很棒！超级推荐！">
+        </div>
+        <button type="submit" class="btn-3d w-full text-xl py-6">
+          <i class="fas fa-magic mr-3"></i> Analyze Sentiment
+        </button>
+      </form>
+    {% endif %}
+  </div>
+
+  <!-- Quick Demo Examples -->
+  <div class="grid md:grid-cols-3 gap-4 mt-12">
+    <form method="POST" class="card-3d p-6 text-center">
+      <input type="hidden" name="review" value="手机太棒了！">
+      <button type="submit" class="btn-3d w-full mb-2">Test Positive</button>
+    </form>
+    <form method="POST" class="card-3d p-6 text-center">
+      <input type="hidden" name="review" value="质量很差，不推荐">
+      <button type="submit" class="btn-3d w-full mb-2">Test Negative</button>
+    </form>
+    <form method="POST" class="card-3d p-6 text-center">
+      <input type="hidden" name="review" value="还可以吧">
+      <button type="submit" class="btn-3d w-full mb-2">Test Neutral</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
