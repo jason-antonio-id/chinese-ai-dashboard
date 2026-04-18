@@ -1,3 +1,12 @@
+---
+title: Chinese AI Dashboard
+emoji: 🤖
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_file: app.py
+pinned: false
+---
 # 🤖 人工智能工具平台 · Chinese AI Dashboard
 
 <div align="center">
