@@ -1140,30 +1140,30 @@ function createBubbles(containerId, count) {
 createBubbles('introBubbles', 25);
 createBubbles('authBubbles', 20);
 
-// Check if user has seen intro before
-const hasSeenIntro = getStorageItem('aidash_seen_intro');
 const lastUserEmail = getStorageItem('aidash_last_user');
 
-// Show intro for 4 seconds then show auth (only for new users)
+// Always show intro on every page load
 window.addEventListener('load', () => {
-  // If returning user, skip intro immediately
-  if (hasSeenIntro === '1') {
+  // Intro animation
+  setTimeout(() => {
     const intro = document.getElementById('luxuryIntro');
-    intro.style.display = 'none';
-    document.getElementById('appLoading').classList.add('active');
-    isReturningUser = true;
-  } else {
-    // First time user - show full intro
+    intro.classList.add('fade-out');
     setTimeout(() => {
-      const intro = document.getElementById('luxuryIntro');
-      intro.classList.add('fade-out');
+      intro.style.display = 'none';
+      const loadingEl = document.getElementById('appLoading');
+      loadingEl.classList.add('active');
+
+      // 🔄 FALLBACK: If Firebase doesn't respond within 10 seconds, force show auth screen
       setTimeout(() => {
-        intro.style.display = 'none';
-        document.getElementById('appLoading').classList.add('active');
-        setStorageItem('aidash_seen_intro', '1');
-      }, 1000);
-    }, 4000);
-  }
+        if (loadingEl.classList.contains('active')) {
+          console.warn('Firebase auth slow/unresponsive – forcing auth screen.');
+          loadingEl.classList.remove('active');
+          loadingEl.classList.add('hide');
+          showAuth();
+        }
+      }, 10000); // 10 seconds
+    }, 1000);
+  }, 4000);
 });
 
 // ====== DARK MODE ======
@@ -1361,8 +1361,15 @@ async function doEmailSignup() {
 
 async function doGoogleLogin() {
   const provider = new firebase.auth.GoogleAuthProvider();
-  try { await fbAuth.signInWithPopup(provider); }
-  catch(e) { showAuthError(e.message); }
+  try {
+    await fbAuth.signInWithPopup(provider);
+  } catch (e) {
+    if (e.code === 'auth/popup-blocked') {
+      showAuthError('Popup blocked. Please allow popups for this site and try again.');
+    } else {
+      showAuthError(e.message);
+    }
+  }
 }
 
 async function doLogout() {
