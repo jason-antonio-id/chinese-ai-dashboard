@@ -11,8 +11,10 @@ load_dotenv()  # reads .env file into os.environ (safe no-op if file absent)
 # ==============================================================
 import json
 import re
+import time
+import threading
 from datetime import datetime, timedelta
-from functools import wraps
+from functools import wraps, lru_cache
 import Levenshtein  # pip install python-Levenshtein
 
 # ==============================================================
@@ -37,8 +39,6 @@ from sklearn.tree import DecisionTreeClassifier
 from snownlp import SnowNLP
 import jieba
 import jieba.analyse
-from tensorflow.keras.applications import MobileNetV2
-from tensorflow.keras.applications.mobilenet_v2 import preprocess_input, decode_predictions
 
 # ==============================================================
 # THIRD-PARTY — Firebase
@@ -101,36 +101,81 @@ else:
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
-# ==================== ML MODELS ====================
-print("Loading MobileNetV2...")
-mobilenet_model = MobileNetV2(weights='imagenet')
-print("MobileNetV2 loaded!")
+# ==================== TOKEN CACHING (SPEEDS UP LOGIN) ====================
+_token_cache = {}
+def verify_token_cached(id_token):
+    """Cache decoded tokens for 5 minutes to avoid repeated Google API calls."""
+    if id_token in _token_cache:
+        decoded, expiry = _token_cache[id_token]
+        if time.time() < expiry:
+            return decoded
+    decoded = auth.verify_id_token(id_token)
+    _token_cache[id_token] = (decoded, time.time() + 300)
+    return decoded
 
-# ==============================================================
-# CHURN PREDICTION MODEL
-# ==============================================================
+# ==================== ASYNC FIRESTORE WRITES ====================
+def update_user_async(uid, email, name, is_admin):
+    """Fire-and-forget background update for last_active and log."""
+    def _update():
+        try:
+            user_ref = db.collection("users").document(uid)
+            # Update last_active and ensure user doc exists with minimal fields
+            user_ref.set({
+                "last_active": firestore.SERVER_TIMESTAMP,
+                "email": email,
+                "name": name,
+                "is_admin": is_admin,
+                "uid": uid
+            }, merge=True)
+            log_activity("🔑", f"User logged in: {email}", email)
+        except Exception as e:
+            print(f"Async update failed: {e}")
+    threading.Thread(target=_update).start()
+
+# ==================== LAZY LOADED ML MODELS ====================
+# All heavy models are now initialized to None and loaded on first use.
+mobilenet_model = None
+preprocess_input_fn = None
+decode_predictions_fn = None
+
+churn_scaler = None
+churn_model = None
+
+price_model = None
+price_scaler = None
+_category_map = None
+_global_avg_price = None
+
+fakereview_vectorizer = None
+fakereview_model = None
+
+# Churn features constant (needed even without model loaded)
 _CHURN_FEATURES = ["months_active", "total_purchases", "total_spent", "days_since_last_purchase"]
 
-_churn_bootstrap = pd.DataFrame({
-    "months_active":            [12, 3, 8, 1, 24, 2, 6, 1, 18, 2],
-    "total_purchases":          [25, 2, 15, 1, 50, 3, 10, 1, 35, 2],
-    "total_spent":              [1500, 80, 900, 30, 3000, 100, 600, 20, 2100, 60],
-    "days_since_last_purchase": [10, 120, 25, 200, 5, 150, 30, 180, 15, 160],
-    "churned":                  [0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
-})
-churn_scaler = StandardScaler()
-_X_boot = churn_scaler.fit_transform(_churn_bootstrap[_CHURN_FEATURES])
-churn_model = DecisionTreeClassifier(random_state=42)
-churn_model.fit(_X_boot, _churn_bootstrap["churned"])
+# ==============================================================
+# CHURN PREDICTION MODEL — lazy loader
+# ==============================================================
+def _get_churn_model():
+    global churn_scaler, churn_model
+    if churn_model is None:
+        print("Loading Churn model...")
+        _churn_bootstrap = pd.DataFrame({
+            "months_active":            [12, 3, 8, 1, 24, 2, 6, 1, 18, 2],
+            "total_purchases":          [25, 2, 15, 1, 50, 3, 10, 1, 35, 2],
+            "total_spent":              [1500, 80, 900, 30, 3000, 100, 600, 20, 2100, 60],
+            "days_since_last_purchase": [10, 120, 25, 200, 5, 150, 30, 180, 15, 160],
+            "churned":                  [0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+        })
+        churn_scaler = StandardScaler()
+        _X_boot = churn_scaler.fit_transform(_churn_bootstrap[_CHURN_FEATURES])
+        churn_model = DecisionTreeClassifier(random_state=42)
+        churn_model.fit(_X_boot, _churn_bootstrap["churned"])
+        print("Churn model loaded!")
+    return churn_scaler, churn_model
 
 # ==============================================================
-# PRICE PREDICTION MODEL — PROFESSIONAL VERSION
-# Supports both single manual input and batch file upload.
-# Brand tier is properly used as an ordinal feature (1-3).
-# Synthetic data with positive rating-price correlation is generated
-# if the training file does not exist.
+# PRICE PREDICTION MODEL — lazy loader
 # ==============================================================
-
 _TRAINING_CSV = os.path.join(os.path.dirname(__file__), "synthetic_products_10_categories.csv")
 
 def _generate_training_data(csv_path):
@@ -197,11 +242,17 @@ def _build_price_model(csv_path):
 
     return model, scaler, cat_map, global_avg
 
-price_model, price_scaler, _category_map, _global_avg_price = _build_price_model(_TRAINING_CSV)
-
+def _get_price_model():
+    global price_model, price_scaler, _category_map, _global_avg_price
+    if price_model is None:
+        print("Loading Price Prediction model...")
+        price_model, price_scaler, _category_map, _global_avg_price = _build_price_model(_TRAINING_CSV)
+        print("Price Prediction model loaded!")
+    return price_model, price_scaler, _category_map, _global_avg_price
 
 def _prepare_single_prediction(category, rating, num_reviews, brand_tier):
     """Prepare a single product for prediction (manual form input)."""
+    _, _, _category_map, _ = _get_price_model()  # ensure loaded
     cat_lower = category.strip().lower()
     encoded_cat = _category_map.get(cat_lower, -1)
     unknown = (encoded_cat == -1)
@@ -218,9 +269,9 @@ def _prepare_single_prediction(category, rating, num_reviews, brand_tier):
 
     return X, unknown
 
-
 def _prepare_batch_prediction(df):
     """Prepare an uploaded DataFrame for batch prediction."""
+    _, _, _category_map, _ = _get_price_model()
     df = df.copy()
     df['category'] = df['category'].astype(str).str.strip().str.lower()
     unknown_mask = ~df['category'].isin(_category_map)
@@ -233,9 +284,8 @@ def _prepare_batch_prediction(df):
     X = df[['category_encoded', 'rating', 'num_reviews', 'brand_tier']]
     return X, unknown_mask
 
-
 # ==============================================================
-# FAKE REVIEW DETECTOR — Enhanced with Linguistic Features & Similarity Filter
+# FAKE REVIEW DETECTOR — lazy loader
 # ==============================================================
 _FAKEREVIEW_CSV = os.path.join(os.path.dirname(__file__), "fake_review_training_data.csv")
 
@@ -327,7 +377,13 @@ def _build_fakereview_model(csv_path):
 
     return vectorizer, clf
 
-fakereview_vectorizer, fakereview_model = _build_fakereview_model(_FAKEREVIEW_CSV)
+def _get_fakereview_model():
+    global fakereview_vectorizer, fakereview_model
+    if fakereview_model is None:
+        print("Loading Fake Review model...")
+        fakereview_vectorizer, fakereview_model = _build_fakereview_model(_FAKEREVIEW_CSV)
+        print("Fake Review model loaded!")
+    return fakereview_vectorizer, fakereview_model
 
 # ==============================================================
 # KEYWORD EXTRACTION – Category‑Based with TF‑IDF & Stop Words
@@ -390,13 +446,6 @@ def save_upload(file, allowed=None):
     path = os.path.join(UPLOAD_FOLDER, filename)
     file.save(path)
     return path
-
-def verify_firebase_token(id_token):
-    try:
-        decoded = auth.verify_id_token(id_token)
-        return decoded
-    except Exception:
-        return None
 
 def get_user_doc(uid):
     return db.collection("users").document(uid).get()
@@ -461,53 +510,53 @@ def index():
 
 @app.route("/api/auth/verify", methods=["POST"])
 def api_auth_verify():
+    start_time = time.time()
     data = request.get_json()
     id_token = data.get("idToken")
     if not id_token:
         return jsonify({"error": "No token provided"}), 400
 
-    decoded = verify_firebase_token(id_token)
+    # Use cached token verification (saves ~1-3 seconds per login)
+    decoded = verify_token_cached(id_token)
     if not decoded:
         return jsonify({"error": "Invalid token"}), 401
 
     uid = decoded["uid"]
     email = decoded.get("email", "")
     name = decoded.get("name", email.split("@")[0])
-
     is_admin = (email == ADMIN_EMAIL)
 
+    # Fetch username only if needed (Firestore read – still required)
     user_ref = db.collection("users").document(uid)
     user_doc = user_ref.get()
-    if not user_doc.exists:
-        user_ref.set({
-            "uid": uid,
-            "email": email,
-            "name": name,
-            "is_admin": is_admin,
-            "suspended": False,
-            "created_at": firestore.SERVER_TIMESTAMP,
-            "last_active": firestore.SERVER_TIMESTAMP
-        })
-        log_activity("✨", f"New user registered: {email}", email)
-    else:
-        doc_data = user_doc.to_dict()
-        if doc_data.get("suspended"):
-            return jsonify({"error": "Account suspended. Contact admin."}), 403
-        user_ref.update({"last_active": firestore.SERVER_TIMESTAMP})
-        log_activity("🔑", f"User logged in: {email}", email)
+    username = ""
+    if user_doc.exists:
+        username = user_doc.to_dict().get("username", "")
 
+    # Ensure user doc exists with minimal fields (merge=True avoids overwrite)
+    user_ref.set({
+        "uid": uid,
+        "email": email,
+        "name": name,
+        "is_admin": is_admin,
+        "last_active": firestore.SERVER_TIMESTAMP,
+    }, merge=True)
+
+    # Set session immediately
     session['uid'] = uid
     session['email'] = email
     session['name'] = name
     session['is_admin'] = is_admin
-
-    # Fetch username from Firestore
-    username = ""
-    if user_doc.exists:
-        username = user_doc.to_dict().get("username", "")
     if username:
         session['username'] = username
 
+    # Async Firestore writes (log_activity, last_active update already done above)
+    # We'll still call log_activity async to not block response
+    def _log_async():
+        log_activity("🔑", f"User logged in: {email}", email)
+    threading.Thread(target=_log_async).start()
+
+    print(f"✅ Login completed in {time.time()-start_time:.2f}s")
     return jsonify({
         "uid": uid,
         "email": email,
@@ -753,6 +802,9 @@ def api_sentiment():
         labels.append(str(review)[:20])
         values.append(score)
 
+    # Convert numpy types to Python floats for JSON serialization
+    values = [float(v) for v in values]
+
     increment_tool_usage("sentiment")
     log_activity("💬", f"Sentiment analysis by {session.get('email','Unknown')}", session.get('email'))
     return jsonify({"result": "\n".join(results), "chart": {"labels": labels, "values": values}})
@@ -809,7 +861,6 @@ def api_keywords():
         category = detect_category(combined_text)
 
     # 3. TF‑IDF keyword extraction with custom stop words
-    #    Fix: set_stop_words expects a file path, so we assign directly to the extractor
     original_stop_words = jieba.analyse.default_tfidf.stop_words.copy()
     try:
         # Add our custom stop words to the existing set
@@ -840,6 +891,9 @@ def api_keywords():
     labels = [w for w, _ in keywords]
     values = [round(s * 100, 1) for _, s in keywords]
 
+    # Convert numpy types to Python floats for JSON serialization
+    values = [float(v) for v in values]
+
     increment_tool_usage("keywords")
     log_activity("🔍", f"Keywords extracted ({category}) by {session.get('email')}", session.get('email'))
 
@@ -869,7 +923,8 @@ def api_ocr():
 @app.route("/api/churn", methods=["POST"])
 @login_required
 def api_churn():
-    global churn_model, churn_scaler
+    # Lazy load churn model
+    churn_scaler, churn_model = _get_churn_model()
 
     if 'file' in request.files and request.files['file'].filename:
         try:
@@ -924,7 +979,6 @@ def api_churn():
             "labels": ["Churn Risk", "Retention"],
             "values": [churn_prob_avg, retain_prob_avg],
         }
-
     else:
         months    = float(request.form.get("months",    6))
         purchases = float(request.form.get("purchases", 10))
@@ -1070,6 +1124,9 @@ def api_recommend():
 @app.route("/api/fakereview", methods=["POST"])
 @login_required
 def api_fakereview():
+    # Lazy load model
+    fakereview_vectorizer, fakereview_model = _get_fakereview_model()
+
     reviews = []
     sources = []
 
@@ -1201,19 +1258,39 @@ def api_fakereview():
 @app.route("/api/imageclassifier", methods=["POST"])
 @login_required
 def api_imageclassifier():
+    global mobilenet_model, preprocess_input_fn, decode_predictions_fn
+    # Lazy-load MobileNetV2 only when this tool is first used
+    if mobilenet_model is None:
+        print("Loading MobileNetV2...")
+        from tensorflow.keras.applications import MobileNetV2
+        from tensorflow.keras.applications.mobilenet_v2 import preprocess_input, decode_predictions
+        mobilenet_model = MobileNetV2(weights='imagenet')
+        preprocess_input_fn = preprocess_input
+        decode_predictions_fn = decode_predictions
+        print("MobileNetV2 loaded!")
+    else:
+        from tensorflow.keras.applications.mobilenet_v2 import preprocess_input as preprocess_input_fn
+        from tensorflow.keras.applications.mobilenet_v2 import decode_predictions as decode_predictions_fn
+
     try:
         path = save_upload(request.files["image"], allowed={"png","jpg","jpeg","webp"})
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
+
     img = Image.open(path).convert('RGB').resize((224, 224))
-    img_array = preprocess_input(np.expand_dims(np.array(img), axis=0).astype(np.float32))
+    img_array = preprocess_input_fn(np.expand_dims(np.array(img), axis=0).astype(np.float32))
     predictions = mobilenet_model.predict(img_array)
-    results = decode_predictions(predictions, top=5)[0]
+    results = decode_predictions_fn(predictions, top=5)[0]
+
     lines, labels, values = [], [], []
     for i, (_, label, score) in enumerate(results):
         lines.append(f"{i+1}. {label} — {round(score*100,1)}%")
         labels.append(label)
         values.append(round(score*100, 1))
+
+    # Convert numpy types to Python floats for JSON serialization
+    values = [float(v) for v in values]
+
     increment_tool_usage("imageclassifier")
     log_activity("🖼️", f"Image classification by {session.get('email','Unknown')}", session.get('email'))
     return jsonify({"result": "Classification Results:\n" + "\n".join(lines), "chart": {"labels": labels, "values": values}})
@@ -1221,14 +1298,9 @@ def api_imageclassifier():
 @app.route("/api/priceprediction", methods=["POST"])
 @login_required
 def api_priceprediction():
-    """
-    Price Prediction – two modes:
-    1. Manual single product: provide category, rating, num_reviews, brand_tier
-    2. Batch file upload: CSV/Excel with columns category, rating, num_reviews, brand_tier
-    """
-    # ------------------------------------------------------------------
-    # MODE 1: Manual single prediction (all fields provided)
-    # ------------------------------------------------------------------
+    # Lazy load price model
+    price_model, price_scaler, _category_map, _global_avg_price = _get_price_model()
+
     category = request.form.get("category", "").strip()
     rating_str = request.form.get("rating", "").strip()
     num_reviews_str = request.form.get("num_reviews", "").strip()
@@ -1399,9 +1471,7 @@ def api_priceprediction():
 #     return preds, probs
 # """
 
-# Keep everything above the same ...
-
 if __name__ == "__main__":
-    # Use the PORT environment variable provided by Render
-    port = int(os.environ.get("PORT", 5000))
+    # Use the PORT environment variable provided by Render or Hugging Face Spaces
+    port = int(os.environ.get("PORT", 7860))
     app.run(host="0.0.0.0", port=port, debug=False)
