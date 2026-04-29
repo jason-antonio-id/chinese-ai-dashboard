@@ -1,0 +1,24 @@
+# ===========================================
+# REQUIRED - Flask Application Settings
+# ===========================================
+
+# Flask secret key – used for session security
+# Generate a new key with: python -c "import secrets; print(secrets.token_hex(32))"
+FLASK_SECRET_KEY=your-generated-secret-key-here
+
+# Admin email address – the user who will have admin privileges
+ADMIN_EMAIL=your-email@example.com
+
+# ===========================================
+# REQUIRED - Firebase Configuration
+# ===========================================
+
+# Path to your Firebase service account key JSON file
+# Download from Firebase Console > Project Settings > Service Accounts > Generate New Private Key
+GOOGLE_APPLICATION_CREDENTIALS=path/to/your/firebase-service-account-key.json
+
+# Optional: Firebase project ID (may be auto-detected from the key, but can be set explicitly)
+# FIREBASE_PROJECT_ID=your-project-id
+
+# Optional: Firebase database URL (if using Realtime Database)
+# FIREBASE_DATABASE_URL=https://your-project-id.firebaseio.com
