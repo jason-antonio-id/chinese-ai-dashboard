@@ -1,4 +1,3 @@
-
 # 🤖 人工智能工具平台 · Chinese AI Dashboard
 
 <div align="center">
@@ -38,15 +37,21 @@ This dashboard bridges that gap — offering **bilingual, ready‑to‑use tools
 
 ---
 
+## 📋 Prerequisites
+
+- **Python 3.8 – 3.11** (TensorFlow may not work on 3.12+)
+- **Tesseract OCR** – required for the OCR Scanner tool
+  - Windows: Download from [UB‑Mannheim](https://github.com/UB-Mannheim/tesseract/wiki) (install to `C:\Program Files\Tesseract-OCR`)
+  - macOS: `brew install tesseract`
+  - Linux: `sudo apt install tesseract-ocr`
+- **Firebase account** (free tier works) – for storing user data and settings
+
+---
+
 ## 🚀 Get Started in 5 Minutes
 
-### ① Prerequisites
-- **Python 3.8–3.11**  
-- **Tesseract OCR** ([Windows installer](https://github.com/UB-Mannheim/tesseract/wiki) / `brew install tesseract` on Mac)  
-- A **Firebase project** with Firestore and Authentication enabled.
+### ① Clone the repository
 
-### ② Clone & Install
 ```bash
 git clone https://github.com/jason-antonio-id/chinese-ai-dashboard.git
 cd chinese-ai-dashboard
-pip install -r requirements.txt
