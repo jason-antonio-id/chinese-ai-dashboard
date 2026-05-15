@@ -5,10 +5,13 @@
 [![Python](https://img.shields.io/badge/Python-3.8%2B-306998?logo=python&logoColor=white)](https://python.org)
 [![Flask](https://img.shields.io/badge/Flask-2.3-000000?logo=flask&logoColor=white)](https://flask.palletsprojects.com)
 [![Firebase](https://img.shields.io/badge/Firebase-🔥-FFA000?logo=firebase)](https://firebase.google.com)
+[![Hugging Face](https://img.shields.io/badge/🤗%20Hugging%20Face-Live%20Demo-yellow)](https://huggingface.co/spaces/JasonAntonio/chinese-ai-dashboard)
 [![Status](https://img.shields.io/badge/status-active-success)](#)
 
 **Nine AI tools. One dashboard. Built for Chinese business.**  
 *九种人工智能工具。一个仪表板。专为中国商业打造。*
+
+### 🚀 [**Try the Live Demo on Hugging Face →**](https://huggingface.co/spaces/JasonAntonio/chinese-ai-dashboard)
 
 </div>
 
@@ -18,6 +21,13 @@
 
 Most AI platforms ignore the nuances of **Chinese language** and **e-commerce data**.  
 This dashboard bridges that gap by offering **bilingual, ready-to-use tools** designed for real-world Chinese business workflows—such as analyzing reviews, detecting fake comments, predicting prices, and more.
+
+---
+
+## 🌐 Live Demo
+
+Try the app instantly without installation:  
+👉 **[https://huggingface.co/spaces/JasonAntonio/chinese-ai-dashboard](https://huggingface.co/spaces/JasonAntonio/chinese-ai-dashboard)**
 
 ---
 
@@ -50,6 +60,8 @@ This dashboard bridges that gap by offering **bilingual, ready-to-use tools** de
 ---
 
 ## 🚀 Get Started in 5 Minutes
+
+> 💡 **Don't want to install anything?** Just use the [**live demo**](https://huggingface.co/spaces/JasonAntonio/chinese-ai-dashboard) instead!
 
 ### 1) Clone the repository
 
@@ -90,6 +102,7 @@ Then open the app URL shown in your terminal (commonly `http://127.0.0.1:5000`).
 
 - Some AI features may require model downloads on first run.
 - OCR accuracy improves with high-resolution, well-cropped images.
+- The hosted version on Hugging Face may take a moment to wake up if it has been idle.
 
 ---
 
@@ -109,6 +122,15 @@ If you'd like to add a new tool or improve existing models:
 ## 📄 License
 
 This project is licensed under the **MIT License**.
+
+---
+
+## 👤 Author
+
+**Jason Antonio**
+- GitHub: [@jason-antonio-id](https://github.com/jason-antonio-id)
+- Hugging Face: [@JasonAntonio](https://huggingface.co/JasonAntonio)
+- Live Demo: [Chinese AI Dashboard](https://huggingface.co/spaces/JasonAntonio/chinese-ai-dashboard)
 
 ---
 
